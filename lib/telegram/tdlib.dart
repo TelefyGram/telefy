@@ -64,19 +64,19 @@ class TdLibBindings {
 
   DynamicLibrary _loadLibrary() {
     if (Platform.isWindows) {
-      return DynamicLibrary.open('tdjson.dll');
+      return DynamicLibrary.open('telefy.dll');
     }
 
     if (Platform.isLinux) {
-      return DynamicLibrary.open('libtdjson.so');
+      return DynamicLibrary.open('libtelefy.so');
     }
 
     if (Platform.isMacOS) {
-      return DynamicLibrary.open('libtdjson.dylib');
+      return DynamicLibrary.open('libtelefy.dylib');
     }
 
     if (Platform.isAndroid) {
-      return DynamicLibrary.open('libtdjson.so');
+      return DynamicLibrary.open('libtelefy.so');
     }
 
     if (Platform.isIOS) {
