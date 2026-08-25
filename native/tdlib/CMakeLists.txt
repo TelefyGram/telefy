@@ -11,17 +11,39 @@ endif()
 
 find_path(TDJSON_INCLUDE_DIR
     NAMES td/telegram/td_json_client.h
-    PATHS "${DTDJSON_ROOT}/include"
+    PATHS "${DTDJSON_ROOT}" "${DTDJSON_ROOT}/include"
+    PATH_SUFFIXES include
     NO_DEFAULT_PATH
-    REQUIRED
 )
+
+if(NOT TDJSON_INCLUDE_DIR)
+    find_path(TDJSON_INCLUDE_DIR
+        NAMES td/telegram/td_json_client.h
+        PATH_SUFFIXES include
+    )
+endif()
+
+if(NOT TDJSON_INCLUDE_DIR)
+    message(FATAL_ERROR "Could not find TDJSON_INCLUDE_DIR under DTDJSON_ROOT='${DTDJSON_ROOT}'. Expected td/telegram/td_json_client.h in include/ or install root.")
+endif()
 
 find_library(TDJSON_LIBRARY
     NAMES tdjson tdjson_static
-    PATHS "${DTDJSON_ROOT}/lib" "${DTDJSON_ROOT}/bin"
+    PATHS "${DTDJSON_ROOT}" "${DTDJSON_ROOT}/lib" "${DTDJSON_ROOT}/bin"
+    PATH_SUFFIXES lib bin
     NO_DEFAULT_PATH
-    REQUIRED
 )
+
+if(NOT TDJSON_LIBRARY)
+    find_library(TDJSON_LIBRARY
+        NAMES tdjson tdjson_static
+        PATH_SUFFIXES lib bin
+    )
+endif()
+
+if(NOT TDJSON_LIBRARY)
+    message(FATAL_ERROR "Could not find TDJSON library under DTDJSON_ROOT='${DTDJSON_ROOT}'. Expected tdjson or tdjson_static in lib/ or bin/.")
+endif()
 
 if(TELEFY_BUILD_SHARED)
     set(TELEFY_LIBRARY_TYPE SHARED)
