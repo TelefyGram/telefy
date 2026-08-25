@@ -12,8 +12,6 @@ class TelegramClient {
 
   bool _disposed = false;
 
-  /// --dart-define=TELEGRAM_API_ID=123456
-  /// --dart-define=TELEGRAM_API_HASH=api_hash
   static const int apiId = int.fromEnvironment('TELEGRAM_API_ID');
 
   static const String apiHash =

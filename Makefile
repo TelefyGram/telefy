@@ -1,5 +1,10 @@
 SHELL := /bin/bash
 
+ifneq (,$(wildcard .env))
+include .env
+export
+endif
+
 ROOT := $(CURDIR)
 TDLIB := $(ROOT)/tdlib
 BUILD := $(ROOT)/build/tdlib
@@ -314,12 +319,19 @@ ios-simulator:
 
 app:
 	@test -n "$(PLATFORM)" || (echo "Usage: make app PLATFORM=macos"; exit 1)
+	@test -f .env || (echo ".env is missing; create it with: cp .env.example .env"; exit 1)
+	@test -n "$(TELEGRAM_API_ID)" || (echo "TELEGRAM_API_ID is missing in .env"; exit 1)
+	@test -n "$(TELEGRAM_API_HASH)" || (echo "TELEGRAM_API_HASH is missing in .env"; exit 1)
 	$(MAKE) tdlib PLATFORM=$(PLATFORM)
 	$(MAKE) package-native PLATFORM=$(PLATFORM)
 	@if [ "$(PLATFORM)" = "android" ]; then \
-		$(FLUTTER) build apk --release; \
+		$(FLUTTER) build apk --release \
+			--dart-define=TELEGRAM_API_ID=$(TELEGRAM_API_ID) \
+			--dart-define=TELEGRAM_API_HASH=$(TELEGRAM_API_HASH); \
 	else \
-		$(FLUTTER) build $(PLATFORM) --release; \
+		$(FLUTTER) build $(PLATFORM) --release \
+			--dart-define=TELEGRAM_API_ID=$(TELEGRAM_API_ID) \
+			--dart-define=TELEGRAM_API_HASH=$(TELEGRAM_API_HASH); \
 	fi
 	$(MAKE) package-native PLATFORM=$(PLATFORM)
 
