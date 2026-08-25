@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import 'ui/screens/chats/chats_screen.dart';
+import 'ui/screens/auth/hello_screen.dart';
 
 class TelefyApp extends StatelessWidget {
   const TelefyApp({super.key});
@@ -9,14 +9,14 @@ class TelefyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
-      title: 'telefy',
+      title: 'Telefy',
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(
           seedColor: Colors.blue,
         ),
         useMaterial3: true,
       ),
-      home: const ChatsScreen(),
+      home: const OnboardingScreen(),
     );
   }
 }
