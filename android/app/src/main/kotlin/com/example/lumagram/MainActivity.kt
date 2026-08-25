@@ -1,4 +1,4 @@
-package com.example.lumagram
+package com.example.telefy
 
 import io.flutter.embedding.android.FlutterActivity
 
