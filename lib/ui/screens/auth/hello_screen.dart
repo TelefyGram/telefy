@@ -15,34 +15,38 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
 
   final List<OnboardingPage> _pages = const [
     OnboardingPage(
-      asset: 'assets/animations/duck.tgs',
-      size: 180,
+      asset: 'assets/animations/hello.tgs',
       title: 'Привет!',
       description: 'Добро пожаловать в Telefy',
     ),
     OnboardingPage(
-      asset: 'assets/animations/src.tgs',
-      size: 180,
+      asset: 'assets/animations/source.tgs',
       title: 'Telefy',
       description: 'Открытый. Безопасный. Стабильный.',
     ),
     OnboardingPage(
-      asset: 'assets/animations/cross_platform.tgs',
-      size: 180,
-      title: 'Кросплатформеность',
-      description: 'Доступно с любого устройства',
-    ),
-    OnboardingPage(
-      asset: 'assets/animations/music.tgs',
-      size: 180,
-      title: 'Музыка',
-      description: 'Большая коллекция музыки, которую создают сами пользователи',
+      asset: 'assets/animations/platform.tgs',
+      title: 'Кроссплатформенность',
+      description:
+          'Пользуйся Telefy на любом устройстве\nwindows, macos, linux, ios, android',
     ),
     OnboardingPage(
       asset: 'assets/animations/communicate.tgs',
-      size: 180,
       title: 'Общайся с удобством',
-      description: 'Отправляй сообщения пользователям других мессенджеры',
+      description:
+          'Общайся с пользователями из других мессенджеров',
+    ),
+    OnboardingPage(
+      asset: 'assets/animations/agitation.tgs',
+      title: 'Находи аудиторию',
+      description:
+          'Публикуй посты в общей ленте и развивай свой канал',
+    ),
+    OnboardingPage(
+      asset: 'assets/animations/music.tgs',
+      title: 'Музыка',
+      description:
+          'Добавляй музыку и слушай то, что добавляют другие',
     ),
   ];
 
@@ -67,13 +71,16 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     debugPrint('Начать');
   }
 
-  Widget _buildAsset(OnboardingPage page) {
-    if (page.asset.toLowerCase().endsWith('.tgs')) {
+  Widget _buildAsset({
+    required String asset,
+    required double size,
+  }) {
+    if (asset.toLowerCase().endsWith('.tgs')) {
       return SizedBox(
-        width: page.size,
-        height: page.size,
+        width: size,
+        height: size,
         child: Lottie.asset(
-          page.asset,
+          asset,
           decoder: LottieComposition.decodeGZip,
           fit: BoxFit.contain,
           repeat: true,
@@ -83,11 +90,24 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     }
 
     return Image.asset(
-      page.asset,
-      width: page.size,
-      height: page.size,
+      asset,
+      width: size,
+      height: size,
       fit: BoxFit.contain,
     );
+  }
+
+  double _responsiveSize(
+    double value,
+    double width,
+    double height, {
+    double min = 0,
+    double max = double.infinity,
+  }) {
+    // 400x800.
+    final scale = ((width / 400) + (height / 800)) / 2;
+
+    return (value * scale).clamp(min, max);
   }
 
   @override
@@ -108,38 +128,105 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                 itemBuilder: (context, index) {
                   final page = _pages[index];
 
-                  return Padding(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 32,
-                    ),
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        _buildAsset(page),
+                  return LayoutBuilder(
+                    builder: (context, constraints) {
+                      final width = constraints.maxWidth;
+                      final height = constraints.maxHeight;
 
-                        const SizedBox(height: 48),
+                      // Размер анимации
+                      final assetSize = _responsiveSize(
+                        180,
+                        width,
+                        height,
+                        min: 130,
+                        max: 220,
+                      );
 
-                        Text(
-                          page.title,
-                          textAlign: TextAlign.center,
-                          style: const TextStyle(
-                            fontSize: 30,
-                            fontWeight: FontWeight.bold,
-                          ),
+                      // Размер заголовка
+                      final titleSize = _responsiveSize(
+                        30,
+                        width,
+                        height,
+                        min: 22,
+                        max: 36,
+                      );
+
+                      // Размер описания
+                      final descriptionSize = _responsiveSize(
+                        17,
+                        width,
+                        height,
+                        min: 14,
+                        max: 19,
+                      );
+
+                      // Отступ между анимацией и заголовком
+                      final assetTitleSpacing = _responsiveSize(
+                        32,
+                        width,
+                        height,
+                        min: 16,
+                        max: 36,
+                      );
+
+                      // Отступ между заголовком и описанием
+                      final titleDescriptionSpacing = _responsiveSize(
+                        12,
+                        width,
+                        height,
+                        min: 8,
+                        max: 16,
+                      );
+
+                      return Padding(
+                        padding: EdgeInsets.symmetric(
+                          horizontal: width < 500 ? 24 : 32,
                         ),
+                        child: Column(
+                          children: [
+                            const Spacer(flex: 2),
 
-                        const SizedBox(height: 16),
+                            _buildAsset(
+                              asset: page.asset,
+                              size: assetSize,
+                            ),
 
-                        Text(
-                          page.description,
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                            fontSize: 17,
-                            color: Colors.grey.shade600,
-                          ),
+                            SizedBox(height: assetTitleSpacing),
+
+                            Text(
+                              page.title,
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                fontSize: titleSize,
+                                height: 1.1,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+
+                            SizedBox(
+                              height: titleDescriptionSpacing,
+                            ),
+
+                            ConstrainedBox(
+                              constraints: BoxConstraints(
+                                maxWidth: width < 500 ? width - 48 : 420,
+                              ),
+                              child: Text(
+                                page.description,
+                                textAlign: TextAlign.center,
+                                style: TextStyle(
+                                  fontSize: descriptionSize,
+                                  height: 1.4,
+                                  color: Colors.grey.shade600,
+                                ),
+                              ),
+                            ),
+
+                            const Spacer(flex: 3),
+                          ],
                         ),
-                      ],
-                    ),
+                      );
+                    },
                   );
                 },
               ),
@@ -152,35 +239,58 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                 (index) {
                   final selected = index == _currentPage;
 
-                  return AnimatedContainer(
-                    duration: const Duration(milliseconds: 200),
-                    margin: const EdgeInsets.symmetric(
-                      horizontal: 4,
-                    ),
-                    width: selected ? 20 : 8,
-                    height: 8,
-                    decoration: BoxDecoration(
-                      color: selected
-                          ? Theme.of(context).colorScheme.primary
-                          : Colors.grey.shade400,
-                      borderRadius: BorderRadius.circular(10),
+                  return GestureDetector(
+                    onTap: () {
+                      _pageController.animateToPage(
+                        index,
+                        duration: const Duration(milliseconds: 300),
+                        curve: Curves.easeInOut,
+                      );
+                    },
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 4,
+                        vertical: 8,
+                      ),
+                      child: AnimatedContainer(
+                        duration: const Duration(milliseconds: 250),
+                        curve: Curves.easeOut,
+                        width: selected ? 28 : 8,
+                        height: 8,
+                        decoration: BoxDecoration(
+                          color: selected
+                              ? Theme.of(context).colorScheme.primary
+                              : Colors.grey.shade300,
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                      ),
                     ),
                   );
                 },
               ),
             ),
 
-            const SizedBox(height: 24),
-
             Padding(
-              padding: const EdgeInsets.symmetric(
-                horizontal: 24,
+              padding: const EdgeInsets.fromLTRB(
+                24,
+                20,
+                24,
+                24,
               ),
               child: SizedBox(
                 width: double.infinity,
-                height: 52,
+                height: 56,
                 child: FilledButton(
                   onPressed: _nextPage,
+                  style: FilledButton.styleFrom(
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(18),
+                    ),
+                    textStyle: const TextStyle(
+                      fontSize: 17,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
                   child: Text(
                     _currentPage == _pages.length - 1
                         ? 'Начать'
@@ -189,8 +299,6 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                 ),
               ),
             ),
-
-            const SizedBox(height: 24),
           ],
         ),
       ),
@@ -200,13 +308,11 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
 
 class OnboardingPage {
   final String asset;
-  final double size;
   final String title;
   final String description;
 
   const OnboardingPage({
     required this.asset,
-    required this.size,
     required this.title,
     required this.description,
   });
