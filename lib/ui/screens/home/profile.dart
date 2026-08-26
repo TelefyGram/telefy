@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 
 import '../../../telegram/client.dart';
+import '../../widgets/dialog.dart';
+import '../auth/hello_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
   final TelegramClientApi client;
@@ -14,6 +16,7 @@ class ProfileScreen extends StatefulWidget {
 
 class _ProfileScreenState extends State<ProfileScreen> {
   late Future<TelegramUserInfo> _accountFuture;
+  bool _isLoggingOut = false;
 
   @override
   void initState() {
@@ -26,6 +29,49 @@ class _ProfileScreenState extends State<ProfileScreen> {
   Future<void> _reload() async {
     setState(() => _accountFuture = widget.client.getMe());
     await _accountFuture;
+  }
+
+  Future<void> _logout() async {
+    if (_isLoggingOut) return;
+
+    var confirmed = false;
+    await TelefyDialog.show(
+      context,
+      title: 'Выйти из аккаунта?',
+      message: 'Сохранённая сессия будет завершена на этом устройстве.',
+      actions: [
+        TelefyDialogAction(label: 'Отмена', onPressed: () {}),
+        TelefyDialogAction(label: 'Выйти', onPressed: () => confirmed = true),
+      ],
+    );
+    if (!confirmed || !mounted) return;
+
+    setState(() => _isLoggingOut = true);
+    try {
+      await widget.client.logOut();
+      if (!mounted) return;
+      final client = widget.client;
+      if (client is! TelegramClient) {
+        return;
+      }
+      Navigator.pushAndRemoveUntil(
+        context,
+        MaterialPageRoute(
+          builder: (_) => OnboardingScreen(client: client),
+        ),
+        (_) => false,
+      );
+    } on Object catch (error) {
+      if (!mounted) return;
+      setState(() => _isLoggingOut = false);
+      debugPrint('Не удалось выйти из аккаунта: $error');
+      await TelefyDialog.show(
+        context,
+        title: 'Не удалось выйти',
+        message: 'Попробуйте ещё раз.',
+        actions: [TelefyDialogAction(label: 'Понятно', onPressed: () {})],
+      );
+    }
   }
 
   String? _value(String? value) {
@@ -73,6 +119,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
             tooltip: 'Обновить',
             onPressed: _reload,
             icon: const Icon(Icons.refresh_rounded),
+          ),
+          IconButton(
+            tooltip: 'Выйти из аккаунта',
+            onPressed: _isLoggingOut ? null : _logout,
+            icon: const Icon(Icons.logout_rounded),
           ),
         ],
       ),

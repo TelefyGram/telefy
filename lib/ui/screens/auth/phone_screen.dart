@@ -107,8 +107,6 @@ class _PhoneNumberScreenState extends State<PhoneNumberScreen> {
       return;
     }
 
-    setState(() => _isRequestingCode = true);
-
     final phone = _phoneController.text.trim();
 
     final phoneCode = _isAnonymousNumber
@@ -116,11 +114,27 @@ class _PhoneNumberScreenState extends State<PhoneNumberScreen> {
         : _selectedCountry!.phoneCode;
     final fullPhoneNumber = '+$phoneCode$phone';
 
+    var confirmed = false;
+    await TelefyDialog.show(
+      context,
+      title: 'Ваш номер',
+      message: fullPhoneNumber,
+      actions: [
+        TelefyDialogAction(label: 'Изменить номер телефона', onPressed: () {}),
+        TelefyDialogAction(label: 'Да', onPressed: () => confirmed = true),
+      ],
+    );
+    if (!confirmed || !mounted) {
+      return;
+    }
+
+    setState(() => _isRequestingCode = true);
+
     try {
       await requestAuthenticationCode(
         client: widget.client,
         phoneNumber: fullPhoneNumber,
-      );
+      ).timeout(const Duration(seconds: 45));
       if (!mounted) {
         return;
       }
@@ -377,15 +391,6 @@ class _PhoneNumberScreenState extends State<PhoneNumberScreen> {
                             onPressed: _canContinue && !_isRequestingCode
                                 ? _continue
                                 : null,
-                            style: FilledButton.styleFrom(
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(18),
-                              ),
-                              textStyle: const TextStyle(
-                                fontSize: 17,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
                             child: const Text('Продолжить'),
                           ),
                         ),
@@ -466,7 +471,7 @@ class _CountrySelectorSheetState extends State<_CountrySelectorSheet> {
   }
 
   List<_PhoneCountryItem> _buildItems([String query = '']) {
-    final recommendedCodes = ['RU', 'NL', 'DE', 'UA', 'BY', 'KZ', 'US', 'GB'];
+    final recommendedCodes = ['RU', 'BY', 'UA', 'US', 'KZ', 'NL', 'DE', 'GB'];
     final recommended = recommendedCodes
         .map(
           (code) => _allCountries.firstWhere(

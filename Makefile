@@ -23,6 +23,9 @@ ANDROID_ABI_LIST := $(ANDROID_ABIS)
 JOBS ?= $(shell sysctl -n hw.ncpu 2>/dev/null || nproc 2>/dev/null || getconf _NPROCESSORS_ONLN 2>/dev/null || echo 4)
 CCACHE ?= $(shell command -v ccache 2>/dev/null || true)
 FORCE_NATIVE_BUILD ?= 0
+BUILD_ANDROID_FULL ?= 1
+BUILD_ANDROID_SPLIT ?= 1
+DEVICE_ID ?=
 
 CMAKE ?= $(shell command -v cmake 2>/dev/null || true)
 NINJA ?= $(shell command -v ninja 2>/dev/null || true)
@@ -47,13 +50,14 @@ ANDROID_NDK_ROOT ?= $(DISCOVERED_ANDROID_NDK_ROOT)
 
 OPENSSL_CACHE_ROOT := $(shell bash -lc 'source "$(ROOT)/scripts/deps.sh" >/dev/null 2>&1; telefy_detect_environment; printf "%s" "$$OPENSSL_CACHE_DIR/$$ANDROID_NDK_VERSION"')
 
-.PHONY: all setup doctor app split-apk bundle native package-native clean clean-deps clean-all rebuild rebuild-native build-info
+.PHONY: all setup doctor app run-android split-apk bundle native package-native clean clean-deps clean-all rebuild rebuild-native build-info
 
 all:
 	@echo "make setup"
 	@echo "make doctor"
 	@echo "make app PLATFORM=android BUILD_MODE=release"
 	@echo "make app PLATFORM=android BUILD_MODE=debug"
+	@echo "make run-android DEVICE_ID=<device-id>"
 	@echo "make split-apk"
 	@echo "make bundle"
 
@@ -87,15 +91,16 @@ ifeq ($(PLATFORM),android)
 			if [ "$(FORCE_NATIVE_BUILD)" != "1" ] && \
 				[ -f "$$wrapper_dir/CMakeCache.txt" ] && [ -f "$$wrapper_dir/build.ninja" ] && \
 				[ -f "$$wrapper_dir/lib/libtelefy.so" ] && \
-				grep -q "^ANDROID_ABI:.*=$$abi$$" "$$wrapper_dir/CMakeCache.txt"; then \
+				grep -q "^ANDROID_ABI:.*=$$abi$$" "$$wrapper_dir/CMakeCache.txt" && \
+				! find "$(ROOT)/native/tdlib" -type f -newer "$$wrapper_dir/lib/libtelefy.so" -print -quit | grep -q .; then \
 				telefy_cached=1; \
 				echo "Telefy $$abi: cached"; \
 			fi; \
-			if [ "$$tdlib_cached" = "0" ] && { [ ! -f "$$install_dir/CMakeCache.txt" ] || [ ! -f "$$install_dir/build.ninja" ]; }; then \
+			if [ "$$tdlib_cached" = "0" ] && [ -e "$$install_dir" ]; then \
 				rm -rf "$$install_dir"; \
 				mkdir -p "$$install_dir"; \
 			fi; \
-			if [ "$$telefy_cached" = "0" ] && { [ ! -f "$$wrapper_dir/CMakeCache.txt" ] || [ ! -f "$$wrapper_dir/build.ninja" ]; }; then \
+			if [ "$$telefy_cached" = "0" ] && [ -e "$$wrapper_dir" ]; then \
 				rm -rf "$$wrapper_dir"; \
 				mkdir -p "$$wrapper_dir"; \
 			fi; \
@@ -201,21 +206,51 @@ app:
 	@test -n "$(PLATFORM)" || (echo "Usage: make app PLATFORM=android BUILD_MODE=release"; exit 1)
 	@test -f .env || (echo ".env is missing; create it with: cp .env.example .env"; exit 1)
 	@bash -lc 'set -a; source .env 2>/dev/null || true; set +a; source "$(ROOT)/scripts/deps.sh"; telefy_detect_environment; if [ -z "$$FLUTTER_BIN" ]; then echo "Flutter is required. Run make setup"; exit 1; fi; if [ -z "$$TELEGRAM_API_ID" ] || [ -z "$$TELEGRAM_API_HASH" ]; then echo "TELEGRAM_API_ID and TELEGRAM_API_HASH are required in .env"; exit 1; fi'
+	@if [ "$(PLATFORM)" = "android" ]; then $(MAKE) setup; fi
 	$(MAKE) native PLATFORM=$(PLATFORM) BUILD_MODE=$(BUILD_MODE)
 	@if [ "$(PLATFORM)" = "android" ]; then $(MAKE) package-native PLATFORM=android; fi
 	@if [ "$(PLATFORM)" = "android" ]; then \
-		$(FLUTTER) pub get; \
-		$(FLUTTER) build apk --$(BUILD_MODE) \
-			--target-platform android-arm64,android-x64 \
-			--dart-define=TELEGRAM_API_ID=$(TELEGRAM_API_ID) \
-			--dart-define=TELEGRAM_API_HASH=$(TELEGRAM_API_HASH) && \
-			mv -f "$(BUILD_ROOT)/app/outputs/flutter-apk/app-$(BUILD_MODE).apk" "$(BUILD_ROOT)/app/outputs/flutter-apk/telefy-$(BUILD_MODE).apk"; \
+		if [ "$(BUILD_ANDROID_FULL)" = "1" ]; then \
+			$(FLUTTER) build apk --$(BUILD_MODE) \
+				--target-platform android-arm64,android-x64 \
+				--dart-define=TELEGRAM_API_ID=$(TELEGRAM_API_ID) \
+				--dart-define=TELEGRAM_API_HASH=$(TELEGRAM_API_HASH) && \
+				mv -f "$(BUILD_ROOT)/app/outputs/flutter-apk/app-$(BUILD_MODE).apk" "$(BUILD_ROOT)/app/outputs/flutter-apk/telefy-$(BUILD_MODE)-full.apk"; \
+		fi; \
+		if [ "$(BUILD_ANDROID_SPLIT)" = "1" ]; then \
+			$(FLUTTER) build apk --$(BUILD_MODE) --split-per-abi \
+				--target-platform android-arm64,android-x64 \
+				--dart-define=TELEGRAM_API_ID=$(TELEGRAM_API_ID) \
+				--dart-define=TELEGRAM_API_HASH=$(TELEGRAM_API_HASH); \
+			if [ "$(BUILD_MODE)" = "release" ]; then \
+				for apk in "$(BUILD_ROOT)/app/outputs/flutter-apk/app-"*-release.apk; do \
+					[ -f "$$apk" ] || continue; \
+					mv -f "$$apk" "$${apk%/*}/telefy-$${apk##*/app-}"; \
+				done; \
+			else \
+				for apk in "$(BUILD_ROOT)/app/outputs/flutter-apk/app-"*-debug.apk; do \
+					[ -f "$$apk" ] || continue; \
+					mv -f "$$apk" "$${apk%/*}/telefy-$${apk##*/app-}"; \
+				done; \
+			fi; \
+		fi; \
 	else \
 		$(FLUTTER) build $(PLATFORM) --$(BUILD_MODE) \
 			--dart-define=TELEGRAM_API_ID=$(TELEGRAM_API_ID) \
 			--dart-define=TELEGRAM_API_HASH=$(TELEGRAM_API_HASH); \
 	fi
 	@if [ "$(PLATFORM)" = "macos" ]; then $(MAKE) package-native PLATFORM=macos BUILD_MODE=$(BUILD_MODE); fi
+
+run-android:
+	@test -f .env || (echo ".env is missing; create it with: cp .env.example .env"; exit 1)
+	@device_id="$(DEVICE_ID)"; \
+	if [ -z "$$device_id" ]; then \
+		device_id="$$(adb devices | awk 'NR > 1 && $$2 == "device" { print $$1; exit }')"; \
+	fi; \
+	if [ -z "$$device_id" ]; then echo "Android device not found. Run: adb devices"; exit 1; fi; \
+	$(FLUTTER) run --no-pub -d "$$device_id" \
+		--dart-define=TELEGRAM_API_ID=$$(grep -E '^TELEGRAM_API_ID=' .env | cut -d= -f2-) \
+		--dart-define=TELEGRAM_API_HASH=$$(grep -E '^TELEGRAM_API_HASH=' .env | cut -d= -f2-)
 
 split-apk:
 	@test -f .env || (echo ".env is missing; create it with: cp .env.example .env"; exit 1)

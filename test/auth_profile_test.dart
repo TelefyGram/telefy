@@ -40,6 +40,26 @@ void main() {
       );
       expect(find.text('Повторить'), findsOneWidget);
     });
+
+    testWidgets('logs out only after confirmation', (tester) async {
+      final client = FakeTelegramClient(
+        account: const TelegramUserInfo(firstName: 'Slava'),
+      );
+
+      await tester.pumpWidget(_host(ProfileScreen(client: client)));
+      await tester.pump();
+      await tester.tap(find.byTooltip('Выйти из аккаунта'));
+      await tester.pump();
+
+      expect(find.text('Выйти из аккаунта?'), findsOneWidget);
+      expect(client.didLogOut, isFalse);
+
+      await tester.tap(find.text('Выйти'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 200));
+
+      expect(client.didLogOut, isTrue);
+    });
   });
 
   group('PasswordScreen', () {
@@ -121,6 +141,7 @@ class FakeTelegramClient implements TelegramClientApi {
   final Object? accountError;
   final Object? passwordError;
   String? checkedPassword;
+  bool didLogOut = false;
 
   FakeTelegramClient({this.account, this.accountError, this.passwordError});
 
@@ -160,5 +181,10 @@ class FakeTelegramClient implements TelegramClientApi {
   Future<TelegramUserInfo> getMe() async {
     if (accountError != null) throw accountError!;
     return account ?? const TelegramUserInfo();
+  }
+
+  @override
+  Future<void> logOut() async {
+    didLogOut = true;
   }
 }

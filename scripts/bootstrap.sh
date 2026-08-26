@@ -5,6 +5,40 @@ ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 source "$ROOT_DIR/scripts/deps.sh"
 telefy_detect_environment
 
+ensure_java() {
+  if java --help >/dev/null 2>&1; then
+    return 0
+  fi
+
+  local java_home=""
+  for candidate in \
+    "/opt/homebrew/opt/openjdk@17/libexec/openjdk.jdk/Contents/Home" \
+    "/usr/local/opt/openjdk@17/libexec/openjdk.jdk/Contents/Home" \
+    "/opt/homebrew/opt/openjdk/libexec/openjdk.jdk/Contents/Home" \
+    "/usr/local/opt/openjdk/libexec/openjdk.jdk/Contents/Home"; do
+    if [[ -x "$candidate/bin/java" ]]; then
+      java_home="$candidate"
+      break
+    fi
+  done
+
+  if [[ -z "$java_home" ]]; then
+    echo "Java JDK 17 is required. Install it with: brew install openjdk@17" >&2
+    return 1
+  fi
+
+  export JAVA_HOME="$java_home"
+  export PATH="$JAVA_HOME/bin:$PATH"
+
+  if ! java --help >/dev/null 2>&1; then
+    echo "Java installation is broken: $JAVA_HOME" >&2
+    return 1
+  fi
+}
+
+ensure_java
+telefy_detect_environment
+
 print_header() {
   echo "Telefy setup"
   echo "------------"
@@ -82,7 +116,16 @@ ensure_android_ndk() {
 ensure_openssl_cache() {
   local cache_dir="$OPENSSL_CACHE_DIR/${ANDROID_NDK_VERSION}"
   local stamp="$cache_dir/.ready"
-  if [[ -f "$stamp" ]]; then
+  local cache_is_ready=1
+  for abi in ${ANDROID_ABIS}; do
+    if [[ ! -f "$cache_dir/$abi/lib/libssl.a" ||
+          ! -f "$cache_dir/$abi/lib/libcrypto.a" ||
+          ! -d "$cache_dir/$abi/include" ]]; then
+      cache_is_ready=0
+      break
+    fi
+  done
+  if [[ -f "$stamp" && "$cache_is_ready" = "1" ]]; then
     echo "OpenSSL Android cache: ready"
     return 0
   fi
@@ -105,6 +148,7 @@ ensure_openssl_cache() {
   ensure_php || return 1
 
   echo "Android OpenSSL missing. Building compatible OpenSSL for Android..."
+  rm -rf "$cache_dir"
   mkdir -p "$cache_dir"
   local tmp_dir="$cache_dir.tmp"
   rm -rf "$tmp_dir"

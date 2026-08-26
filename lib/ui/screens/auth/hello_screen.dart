@@ -238,8 +238,6 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
 
               LayoutBuilder(
                 builder: (context, constraints) {
-                  final indicatorWidth = constraints.maxWidth;
-
                   return Padding(
                     padding: const EdgeInsets.symmetric(
                       horizontal: 24,
@@ -247,34 +245,29 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                     ),
                     child: GestureDetector(
                       behavior: HitTestBehavior.opaque,
-
                       onHorizontalDragStart: (details) {
-                        _handleIndicatorDrag(
+                        _selectPageAtIndicatorPosition(
                           details.localPosition.dx,
-                          indicatorWidth,
                         );
                       },
-
                       onHorizontalDragUpdate: (details) {
-                        _handleIndicatorDrag(
+                        _selectPageAtIndicatorPosition(
                           details.localPosition.dx,
-                          indicatorWidth,
                         );
                       },
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        mainAxisSize: MainAxisSize.min,
+                        children: List.generate(_pages.length, (index) {
+                          final selected = index == _currentPage;
 
-                      child: SizedBox(
-                        width: indicatorWidth,
-                        height: 40,
-                        child: Center(
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: List.generate(_pages.length, (index) {
-                              final selected = index == _currentPage;
-
-                              return Padding(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 6,
-                                ),
+                          return SizedBox(
+                            width: 32,
+                            height: 32,
+                            child: GestureDetector(
+                              behavior: HitTestBehavior.opaque,
+                              onTap: () => _goToPage(index),
+                              child: Center(
                                 child: AnimatedContainer(
                                   duration: const Duration(milliseconds: 100),
                                   width: selected ? 28 : 8,
@@ -286,10 +279,10 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                                     borderRadius: BorderRadius.circular(8),
                                   ),
                                 ),
-                              );
-                            }),
-                          ),
-                        ),
+                              ),
+                            ),
+                          );
+                        }),
                       ),
                     ),
                   );
@@ -303,15 +296,6 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                   height: 56,
                   child: FilledButton(
                     onPressed: _nextPage,
-                    style: FilledButton.styleFrom(
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(18),
-                      ),
-                      textStyle: const TextStyle(
-                        fontSize: 17,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
                     child: Text(
                       _currentPage == _pages.length - 1 ? 'Начать' : 'Далее',
                     ),
@@ -339,6 +323,20 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
       duration: const Duration(milliseconds: 300),
       curve: Curves.easeInOut,
     );
+  }
+
+  void _selectPageAtIndicatorPosition(double localX) {
+    if (_pages.isEmpty || !_pageController.hasClients) {
+      return;
+    }
+
+    final index = (localX / 32).floor().clamp(0, _pages.length - 1);
+    if (index == _currentPage) {
+      return;
+    }
+
+    _pageController.jumpToPage(index);
+    setState(() => _currentPage = index);
   }
 
   void _handleKeyEvent(KeyEvent event) {
@@ -371,23 +369,6 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
       _goToPage(_currentPage + 1);
     } else {
       _start();
-    }
-  }
-
-  void _handleIndicatorDrag(double localX, double width) {
-    if (_pages.isEmpty) return;
-
-    final position = localX.clamp(0.0, width);
-    final progress = position / width;
-
-    final page = (progress * (_pages.length - 1)).round();
-
-    if (page != _currentPage) {
-      _pageController.jumpToPage(page);
-
-      setState(() {
-        _currentPage = page;
-      });
     }
   }
 }
