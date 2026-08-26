@@ -1,20 +1,6 @@
 /******/ (function(modules) { // webpackBootstrap
-/******/ 	this["webpackChunktdweb"] = function webpackChunkCallback(chunkIds, moreModules) {
-/******/ 		for(var moduleId in moreModules) {
-/******/ 			modules[moduleId] = moreModules[moduleId];
-/******/ 		}
-/******/ 		while(chunkIds.length)
-/******/ 			installedChunks[chunkIds.pop()] = 1;
-/******/ 	};
-/******/
 /******/ 	// The module cache
 /******/ 	var installedModules = {};
-/******/
-/******/ 	// object to store loaded chunks
-/******/ 	// "1" means "already loaded"
-/******/ 	var installedChunks = {
-/******/ 		0: 1
-/******/ 	};
 /******/
 /******/ 	// The require function
 /******/ 	function __webpack_require__(moduleId) {
@@ -40,18 +26,6 @@
 /******/ 		return module.exports;
 /******/ 	}
 /******/
-/******/ 	// This file contains only the entry chunk.
-/******/ 	// The chunk loading function for additional chunks
-/******/ 	__webpack_require__.e = function requireEnsure(chunkId) {
-/******/ 		var promises = [];
-/******/ 		promises.push(Promise.resolve().then(function() {
-/******/ 			// "1" is the signal for "already loaded"
-/******/ 			if(!installedChunks[chunkId]) {
-/******/ 				importScripts(__webpack_require__.p + "" + chunkId + "." + "08660357f9f9d1bbe69a" + ".worker.js");
-/******/ 			}
-/******/ 		}));
-/******/ 		return Promise.all(promises);
-/******/ 	};
 /******/
 /******/ 	// expose the modules object (__webpack_modules__)
 /******/ 	__webpack_require__.m = modules;
@@ -3511,10 +3485,11 @@ function _loadTdlibWasm() {
       while (1) switch (_context28.n) {
         case 0:
           console.log('loadTdlibWasm');
-          _context28.n = 1;
-          return __webpack_require__.e(/* import() */ 1).then(__webpack_require__.bind(null, 30));
-        case 1:
-          td_module = _context28.v;
+          importScripts('/tdweb/td_wasm.js');
+          /* eslint-disable no-undef */
+          td_module = {
+            "default": globalThis.createTdwebModule
+          };
           createTdwebModule = td_module["default"];
           logger.info('receive td_wasm.js', td_module, createTdwebModule);
           td_wasm = td_wasm_default.a;
@@ -3537,9 +3512,9 @@ function _loadTdlibWasm() {
             }
           });
           logger.info('Wait module');
-          _context28.n = 2;
+          _context28.n = 1;
           return module;
-        case 2:
+        case 1:
           module = _context28.v;
           logger.info('Loaded module', module);
           //onFS(module.FS);

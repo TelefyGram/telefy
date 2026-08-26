@@ -4,45 +4,50 @@ set -eu
 ROOT=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
 WEB_ROOT="$ROOT/tdlib/example/web"
 TDWEB_ROOT="$WEB_ROOT/tdweb"
-TDWEB_BUILD="$WEB_ROOT/build/tdweb-build"
+TDWEB_BUILD="$ROOT/build/tdweb-build"
+WASM_ROOT="$WEB_ROOT/build/wasm"
+OUTPUT_ROOT="$ROOT/web/tdweb"
 FORCE=${FORCE_WEB_WASM_BUILD:-0}
 
-needs_native_build=0
-if [ "$FORCE" = "1" ] || [ ! -f "$WEB_ROOT/build/crypto/lib/libcrypto.a" ] || [ ! -f "$WEB_ROOT/build/crypto/lib/libssl.a" ]; then needs_native_build=1; fi
-if [ "$FORCE" = "1" ] || [ ! -f "$WEB_ROOT/build/wasm/td_wasm.js" ] || [ ! -f "$WEB_ROOT/build/wasm/td_wasm.wasm" ]; then needs_native_build=1; fi
-
-if [ "$needs_native_build" = "1" ]; then
-  command -v emcc >/dev/null 2>&1 || { echo "Emscripten is required. Activate emsdk_env.sh first."; exit 1; }
-  command -v emcmake >/dev/null 2>&1 || { echo "emcmake is required. Activate emsdk_env.sh first."; exit 1; }
-  if [ "$FORCE" = "1" ] || [ ! -f "$WEB_ROOT/build/crypto/lib/libcrypto.a" ] || [ ! -f "$WEB_ROOT/build/crypto/lib/libssl.a" ]; then
-    JOBS=${JOBS:-4} "$ROOT/scripts/build-web-openssl.sh"
-  else
-    echo "WebAssembly OpenSSL: cached"
-  fi
-  JOBS=${JOBS:-4} "$ROOT/scripts/build-web-tdlib.sh"
-else
-  echo "TDLib WebAssembly: cached"
-  if [ "$FORCE" = "1" ] || [ ! -f "$TDWEB_ROOT/src/prebuilt/release/td_wasm.js" ] || [ ! -f "$TDWEB_ROOT/src/prebuilt/release/td_wasm.wasm" ]; then
-    mkdir -p "$TDWEB_ROOT/src/prebuilt/release"
-    cp "$WEB_ROOT/build/wasm/td_wasm.js" "$WEB_ROOT/build/wasm/td_wasm.wasm" "$TDWEB_ROOT/src/prebuilt/release/"
-  fi
+if [ ! -f "$WASM_ROOT/td_wasm.js" ] || [ ! -f "$WASM_ROOT/td_wasm.wasm" ]; then
+  echo "TDLib WebAssembly cache is missing: $WASM_ROOT" >&2
+  echo "Build TDLib WebAssembly outside this integration script, then retry." >&2
+  exit 1
 fi
 
-if [ "$FORCE" = "1" ] || [ ! -f "$TDWEB_ROOT/dist/tdweb.js" ]; then
+if [ "$FORCE" = "1" ] || [ ! -f "$OUTPUT_ROOT/tdweb.js" ]; then
   rm -rf "$TDWEB_BUILD"
-  mkdir -p "$TDWEB_BUILD"
+  mkdir -p "$TDWEB_BUILD/src/prebuilt/release"
   cp -R "$TDWEB_ROOT/src" "$TDWEB_ROOT/package.json" "$TDWEB_ROOT/package-lock.json" "$TDWEB_BUILD/"
-  cp "$TDWEB_ROOT/webpack.config.js" "$TDWEB_BUILD/webpack.config.js"
+  cp "$WASM_ROOT/td_wasm.wasm" "$TDWEB_BUILD/src/prebuilt/release/td_wasm.wasm"
+  cp "$WASM_ROOT/td_wasm.js" "$TDWEB_BUILD/td_wasm.js"
+  awk '
+    /const td_module = await import\('\''\.\/prebuilt\/release\/td_wasm\.js'\''\);/ {
+      print "  importScripts('\''/tdweb/td_wasm.js'\'');"
+      print "  /* eslint-disable no-undef */"
+      print "  const td_module = { default: globalThis.createTdwebModule };"
+      next
+    }
+    { print }
+  ' "$TDWEB_ROOT/src/worker.js" > "$TDWEB_BUILD/src/worker.js"
+  awk '
+    /path: path.resolve\(__dirname, '\''dist'\''\),/ {
+      print
+      print "    publicPath: '\''/tdweb/'\'',"
+      next
+    }
+    { print }
+  ' "$TDWEB_ROOT/webpack.config.js" > "$TDWEB_BUILD/webpack.config.js"
   cd "$TDWEB_BUILD"
   npm install --no-save --legacy-peer-deps @babel/core@^7 @babel/preset-env@^7 babel-loader@^8
   npm run build
-  rm -rf "$TDWEB_ROOT/dist"
-  cp -R "$TDWEB_BUILD/dist" "$TDWEB_ROOT/dist"
 else
   echo "tdweb JavaScript plugin: cached"
 fi
 
-test -f "$TDWEB_ROOT/dist/tdweb.js" || { echo "tdweb plugin is missing"; exit 1; }
-mkdir -p "$ROOT/web/tdweb"
-cp -R "$TDWEB_ROOT/dist/." "$ROOT/web/tdweb/"
+test -f "$TDWEB_BUILD/dist/tdweb.js" || { echo "tdweb plugin is missing"; exit 1; }
+rm -rf "$OUTPUT_ROOT"
+mkdir -p "$OUTPUT_ROOT"
+cp "$TDWEB_BUILD/td_wasm.js" "$OUTPUT_ROOT/td_wasm.js"
+cp -R "$TDWEB_BUILD/dist/." "$OUTPUT_ROOT/"
 echo "TDLib WebAssembly plugin copied to web/tdweb"
