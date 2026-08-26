@@ -3,6 +3,7 @@ import 'package:lottie/lottie.dart';
 import 'package:flutter/services.dart';
 
 import '../../../telegram/client.dart';
+import 'internal/onboarding_data.dart';
 import 'phone_screen.dart';
 
 class OnboardingScreen extends StatefulWidget {
@@ -20,38 +21,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
 
   int _currentPage = 0;
 
-  final List<OnboardingPage> _pages = const [
-    OnboardingPage(
-      asset: 'assets/animations/hello.tgs',
-      title: 'Привет!',
-      description: 'Добро пожаловать в Telefy',
-    ),
-    OnboardingPage(
-      asset: 'assets/animations/source.tgs',
-      title: 'Telefy',
-      description: 'Открытый. Безопасный. Стабильный.',
-    ),
-    OnboardingPage(
-      asset: 'assets/animations/platform.tgs',
-      title: 'Кроссплатформенность',
-      description: 'Пользуйся Telefy на любом устройстве\nwindows, macos, linux, ios, android',
-    ),
-    OnboardingPage(
-      asset: 'assets/animations/communicate.tgs',
-      title: 'Общайся с удобством',
-      description: 'Общайся с пользователями из других мессенджеров',
-    ),
-    OnboardingPage(
-      asset: 'assets/animations/agitation.tgs',
-      title: 'Находи аудиторию',
-      description: 'Публикуй посты в общей ленте и развивай свой канал',
-    ),
-    OnboardingPage(
-      asset: 'assets/animations/music.tgs',
-      title: 'Музыка',
-      description: 'Добавляй музыку и слушай то, что добавляют другие',
-    ),
-  ];
+  final List<OnboardingPage> _pages = onboardingPages;
 
   @override
   void initState() {
@@ -371,16 +341,4 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
       _start();
     }
   }
-}
-
-class OnboardingPage {
-  final String asset;
-  final String title;
-  final String description;
-
-  const OnboardingPage({
-    required this.asset,
-    required this.title,
-    required this.description,
-  });
 }

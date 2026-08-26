@@ -1,7 +1,7 @@
-import 'dart:io';
-
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 
+import 'platform/platform_info.dart';
 import 'telegram/client.dart';
 import 'ui/screens/auth/hello_screen.dart';
 import 'ui/screens/home/profile.dart';
@@ -126,8 +126,8 @@ class _AuthGateState extends State<_AuthGate> {
   Future<void> _initialize() {
     return client.initialize(
       systemLanguageCode: 'ru',
-      deviceModel: Platform.operatingSystem,
-      systemVersion: Platform.operatingSystemVersion,
+      deviceModel: defaultTargetPlatform.name,
+      systemVersion: systemVersion,
       appVersion: '0.0.1',
     );
   }

@@ -56,9 +56,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       }
       Navigator.pushAndRemoveUntil(
         context,
-        MaterialPageRoute(
-          builder: (_) => OnboardingScreen(client: client),
-        ),
+        MaterialPageRoute(builder: (_) => OnboardingScreen(client: client)),
         (_) => false,
       );
     } on Object catch (error) {

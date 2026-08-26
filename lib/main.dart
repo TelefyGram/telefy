@@ -1,7 +1,7 @@
 import 'package:flutter/widgets.dart';
 
 import 'app.dart';
-import 'logging/app_logger.dart';
+import 'logging/app_logger_platform.dart';
 import 'telegram/client.dart';
 
 Future<void> main() async {

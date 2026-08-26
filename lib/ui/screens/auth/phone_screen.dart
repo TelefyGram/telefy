@@ -7,12 +7,8 @@ import '../../../telegram/client.dart';
 import '../../widgets/dialog.dart';
 import '../../widgets/loading.dart';
 import 'internal/auth.dart';
+import 'internal/auth_constants.dart';
 import 'code_screen.dart';
-
-class AnonymousNumber {
-  static const phoneCode = '888';
-  static const emoji = '🏴‍☠️';
-}
 
 class PhoneNumberScreen extends StatefulWidget {
   final TelegramClient client;
@@ -496,136 +492,138 @@ class _CountrySelectorSheetState extends State<_CountrySelectorSheet> {
     final theme = Theme.of(context);
 
     return SafeArea(
-      child: Container(
+      child: SizedBox(
         height: MediaQuery.of(context).size.height * 0.82,
-        decoration: BoxDecoration(
+        child: Material(
           color: theme.scaffoldBackgroundColor,
           borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-        ),
-        child: Column(
-          children: [
-            const SizedBox(height: 10),
+          clipBehavior: Clip.antiAlias,
+          child: Column(
+            children: [
+              const SizedBox(height: 10),
 
-            // Полоска сверху
-            Container(
-              width: 42,
-              height: 4,
-              decoration: BoxDecoration(
-                color: Colors.grey.shade400,
-                borderRadius: BorderRadius.circular(10),
+              // Полоска сверху
+              Container(
+                width: 42,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade400,
+                  borderRadius: BorderRadius.circular(10),
+                ),
               ),
-            ),
 
-            const SizedBox(height: 18),
+              const SizedBox(height: 18),
 
-            const Text(
-              'Выберите страну',
-              style: TextStyle(fontSize: 20, fontWeight: FontWeight.w700),
-            ),
+              const Text(
+                'Выберите страну',
+                style: TextStyle(fontSize: 20, fontWeight: FontWeight.w700),
+              ),
 
-            const SizedBox(height: 16),
+              const SizedBox(height: 16),
 
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: TextField(
-                controller: _searchController,
-                autofocus: true,
-                decoration: InputDecoration(
-                  hintText: 'Поиск страны',
-                  prefixIcon: const Icon(Icons.search_rounded),
-                  filled: true,
-                  fillColor: Colors.grey.shade100,
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(14),
-                    borderSide: BorderSide.none,
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: TextField(
+                  controller: _searchController,
+                  autofocus: true,
+                  decoration: InputDecoration(
+                    hintText: 'Поиск страны',
+                    prefixIcon: const Icon(Icons.search_rounded),
+                    filled: true,
+                    fillColor: Colors.grey.shade100,
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(14),
+                      borderSide: BorderSide.none,
+                    ),
                   ),
                 ),
               ),
-            ),
 
-            const SizedBox(height: 8),
+              const SizedBox(height: 8),
 
-            Expanded(
-              child: ListView.separated(
-                keyboardDismissBehavior:
-                    ScrollViewKeyboardDismissBehavior.onDrag,
-                itemCount: _searchController.text.trim().isEmpty
-                    ? _visibleItems.length + 2
-                    : _visibleItems.length,
-                separatorBuilder: (context, index) => index == 0 || index == 10
-                    ? const SizedBox(height: 8)
-                    : const SizedBox.shrink(),
-                itemBuilder: (context, index) {
-                  if (_searchController.text.trim().isEmpty && index == 0) {
-                    return const _SectionTitle('Рекомендуемые страны');
-                  }
-                  if (_searchController.text.trim().isEmpty && index == 10) {
-                    return const _SectionTitle('Все страны');
-                  }
+              Expanded(
+                child: ListView.separated(
+                  keyboardDismissBehavior:
+                      ScrollViewKeyboardDismissBehavior.onDrag,
+                  itemCount: _searchController.text.trim().isEmpty
+                      ? _visibleItems.length + 2
+                      : _visibleItems.length,
+                  separatorBuilder: (context, index) =>
+                      index == 0 || index == 10
+                      ? const SizedBox(height: 8)
+                      : const SizedBox.shrink(),
+                  itemBuilder: (context, index) {
+                    if (_searchController.text.trim().isEmpty && index == 0) {
+                      return const _SectionTitle('Рекомендуемые страны');
+                    }
+                    if (_searchController.text.trim().isEmpty && index == 10) {
+                      return const _SectionTitle('Все страны');
+                    }
 
-                  final itemIndex = _searchController.text.trim().isEmpty
-                      ? index < 10
-                            ? index - 1
-                            : index - 2
-                      : index;
-                  final item = _visibleItems[itemIndex];
-                  final selected = item.isAnonymous
-                      ? widget.isAnonymousNumber
-                      : !widget.isAnonymousNumber &&
-                            item.country!.countryCode ==
-                                widget.selectedCountry!.countryCode;
+                    final itemIndex = _searchController.text.trim().isEmpty
+                        ? index < 10
+                              ? index - 1
+                              : index - 2
+                        : index;
+                    final item = _visibleItems[itemIndex];
+                    final selected = item.isAnonymous
+                        ? widget.isAnonymousNumber
+                        : !widget.isAnonymousNumber &&
+                              item.country!.countryCode ==
+                                  widget.selectedCountry!.countryCode;
 
-                  return ListTile(
-                    onTap: () {
-                      if (item.isAnonymous) {
-                        widget.onAnonymousSelected();
-                      } else {
-                        widget.onCountrySelected(item.country!);
-                      }
-                    },
-                    leading: Text(
-                      item.isAnonymous
-                          ? AnonymousNumber.emoji
-                          : item.country!.flagEmoji,
-                      style: const TextStyle(fontSize: 27),
-                    ),
-                    title: Text(
-                      item.name,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    trailing: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        SizedBox(
-                          width: 55,
-                          child: Text(
-                            '+${item.phoneCode}',
-                            textAlign: TextAlign.right,
-                            style: TextStyle(
-                              color: Colors.grey.shade600,
-                              fontSize: 15,
+                    return ListTile(
+                      onTap: () {
+                        if (item.isAnonymous) {
+                          widget.onAnonymousSelected();
+                        } else {
+                          widget.onCountrySelected(item.country!);
+                        }
+                      },
+                      leading: Text(
+                        item.isAnonymous
+                            ? AnonymousNumber.emoji
+                            : item.country!.flagEmoji,
+                        style: const TextStyle(fontSize: 27),
+                      ),
+                      title: Text(
+                        item.name,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      trailing: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          SizedBox(
+                            width: 55,
+                            child: Text(
+                              '+${item.phoneCode}',
+                              textAlign: TextAlign.right,
+                              style: TextStyle(
+                                color: Colors.grey.shade600,
+                                fontSize: 15,
+                              ),
                             ),
                           ),
-                        ),
-                        const SizedBox(width: 8),
-                        SizedBox(
-                          width: 20,
-                          child: selected
-                              ? Icon(
-                                  Icons.check_rounded,
-                                  color: theme.colorScheme.primary,
-                                  size: 20,
-                                )
-                              : null,
-                        ),
-                      ],
-                    ),
-                  );
-                },
+                          const SizedBox(width: 8),
+                          SizedBox(
+                            width: 20,
+                            child: selected
+                                ? Icon(
+                                    Icons.check_rounded,
+                                    color: theme.colorScheme.primary,
+                                    size: 20,
+                                  )
+                                : null,
+                          ),
+                        ],
+                      ),
+                    );
+                  },
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );

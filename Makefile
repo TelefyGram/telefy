@@ -11,18 +11,21 @@ MACOS_TELEFY_BUILD := $(BUILD_ROOT)/macos/telefy
 MACOS_OPENSSL_LIB_DIR := $(shell brew --prefix openssl@3 2>/dev/null)/lib
 ANDROID_JNI_DIR := $(ROOT)/android/app/src/main/jniLibs
 DIST := $(ROOT)/dist
+TDWEB_ROOT := $(TDLIB)/example/web
 
 include config/dependencies.env
 -include .env
 export
 
-PLATFORM ?= android
+PLATFORM ?= $(or $(PLATPHORM),android)
 BUILD_MODE ?= release
+PORT ?= 8080
 ANDROID_ABIS := $(strip $(subst ",,$(subst , ,$(ANDROID_ABIS))))
 ANDROID_ABI_LIST := $(ANDROID_ABIS)
 JOBS ?= $(shell sysctl -n hw.ncpu 2>/dev/null || nproc 2>/dev/null || getconf _NPROCESSORS_ONLN 2>/dev/null || echo 4)
 CCACHE ?= $(shell command -v ccache 2>/dev/null || true)
 FORCE_NATIVE_BUILD ?= 0
+FORCE_WEB_WASM_BUILD ?= 0
 BUILD_ANDROID_FULL ?= 1
 BUILD_ANDROID_SPLIT ?= 1
 DEVICE_ID ?=
@@ -50,14 +53,20 @@ ANDROID_NDK_ROOT ?= $(DISCOVERED_ANDROID_NDK_ROOT)
 
 OPENSSL_CACHE_ROOT := $(shell bash -lc 'source "$(ROOT)/scripts/deps.sh" >/dev/null 2>&1; telefy_detect_environment; printf "%s" "$$OPENSSL_CACHE_DIR/$$ANDROID_NDK_VERSION"')
 
-.PHONY: all setup doctor app run-android split-apk bundle native package-native clean clean-deps clean-all rebuild rebuild-native build-info
+.PHONY: all setup doctor app build-web build-web-wasm run run-web run-android split-apk bundle native package-native clean clean-deps clean-all rebuild rebuild-native build-info
 
 all:
 	@echo "make setup"
 	@echo "make doctor"
 	@echo "make app PLATFORM=android BUILD_MODE=release"
 	@echo "make app PLATFORM=android BUILD_MODE=debug"
-	@echo "make run-android DEVICE_ID=<device-id>"
+	@echo "make build-web"
+	@echo "make build-web-wasm"
+	@echo "make run PLATFORM=web PORT=8080"
+	@echo "make run PLATFORM=android DEVICE_ID=<device-id>"
+	@echo "make run PLATFORM=macos"
+	@echo "make run PLATFORM=windows"
+	@echo "make run PLATFORM=linux"
 	@echo "make split-apk"
 	@echo "make bundle"
 
@@ -202,6 +211,9 @@ else
 endif
 
 
+ifeq ($(PLATFORM),web)
+app: build-web
+else
 app:
 	@test -n "$(PLATFORM)" || (echo "Usage: make app PLATFORM=android BUILD_MODE=release"; exit 1)
 	@test -f .env || (echo ".env is missing; create it with: cp .env.example .env"; exit 1)
@@ -240,17 +252,45 @@ app:
 			--dart-define=TELEGRAM_API_HASH=$(TELEGRAM_API_HASH); \
 	fi
 	@if [ "$(PLATFORM)" = "macos" ]; then $(MAKE) package-native PLATFORM=macos BUILD_MODE=$(BUILD_MODE); fi
+endif
 
-run-android:
+build-web:
 	@test -f .env || (echo ".env is missing; create it with: cp .env.example .env"; exit 1)
-	@device_id="$(DEVICE_ID)"; \
-	if [ -z "$$device_id" ]; then \
-		device_id="$$(adb devices | awk 'NR > 1 && $$2 == "device" { print $$1; exit }')"; \
-	fi; \
-	if [ -z "$$device_id" ]; then echo "Android device not found. Run: adb devices"; exit 1; fi; \
-	$(FLUTTER) run --no-pub -d "$$device_id" \
+	@$(FLUTTER) pub get
+	@$(FLUTTER) build web --$(BUILD_MODE) \
 		--dart-define=TELEGRAM_API_ID=$$(grep -E '^TELEGRAM_API_ID=' .env | cut -d= -f2-) \
 		--dart-define=TELEGRAM_API_HASH=$$(grep -E '^TELEGRAM_API_HASH=' .env | cut -d= -f2-)
+
+build-web-wasm:
+	@FORCE_WEB_WASM_BUILD=$(FORCE_WEB_WASM_BUILD) ./scripts/build-web-wasm.sh
+
+run:
+	@test -f .env || (echo ".env is missing; create it with: cp .env.example .env"; exit 1)
+	@$(FLUTTER) pub get
+	@if [ "$(PLATFORM)" = "web" ]; then \
+		$(FLUTTER) run -d chrome --web-port=$(PORT) \
+			--dart-define=TELEGRAM_API_ID=$$(grep -E '^TELEGRAM_API_ID=' .env | cut -d= -f2-) \
+			--dart-define=TELEGRAM_API_HASH=$$(grep -E '^TELEGRAM_API_HASH=' .env | cut -d= -f2-); \
+	elif [ "$(PLATFORM)" = "android" ]; then \
+		device_id="$(DEVICE_ID)"; \
+		if [ -z "$$device_id" ]; then device_id="$$(adb devices | awk 'NR > 1 && $$2 == "device" { print $$1; exit }')"; fi; \
+		if [ -z "$$device_id" ]; then echo "Android device not found. Run: make run PLATFORM=android DEVICE_ID=<device-id>"; exit 1; fi; \
+		$(FLUTTER) run --no-pub -d "$$device_id" \
+			--dart-define=TELEGRAM_API_ID=$$(grep -E '^TELEGRAM_API_ID=' .env | cut -d= -f2-) \
+			--dart-define=TELEGRAM_API_HASH=$$(grep -E '^TELEGRAM_API_HASH=' .env | cut -d= -f2-); \
+	elif [ "$(PLATFORM)" = "macos" ] || [ "$(PLATFORM)" = "windows" ] || [ "$(PLATFORM)" = "linux" ]; then \
+		$(FLUTTER) run -d "$(PLATFORM)" \
+			--dart-define=TELEGRAM_API_ID=$$(grep -E '^TELEGRAM_API_ID=' .env | cut -d= -f2-) \
+			--dart-define=TELEGRAM_API_HASH=$$(grep -E '^TELEGRAM_API_HASH=' .env | cut -d= -f2-); \
+	else \
+		echo "Unsupported platform: $(PLATFORM). Use web, android, macos, windows or linux"; exit 1; \
+	fi
+
+run-web:
+	$(MAKE) run PLATFORM=web PORT=$(PORT)
+
+run-android:
+	$(MAKE) run PLATFORM=android DEVICE_ID="$(DEVICE_ID)"
 
 split-apk:
 	@test -f .env || (echo ".env is missing; create it with: cp .env.example .env"; exit 1)

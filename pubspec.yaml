@@ -60,13 +60,13 @@ flutter_launcher_icons:
   ios: true
   macos:
     generate: true
-    image_path: assets/icons/app_icon.png
+    image_path: assets/icons/app_full_icon.png.png
   windows:
     generate: true
     image_path: assets/icons/app_icon.png
   web:
     generate: true
-    image_path: assets/icons/app_icon.png
+    image_path: assets/icons/app_full_icon.png.png
     background_color: '#FFFFFF'
     theme_color: '#17D9E6'
   image_path: assets/icons/app_icon.png
