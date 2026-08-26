@@ -20,12 +20,27 @@ if [ "$FORCE" = "1" ] || [ ! -f "$OUTPUT_ROOT/tdweb.js" ]; then
   mkdir -p "$TDWEB_BUILD/src/prebuilt/release"
   cp -R "$TDWEB_ROOT/src" "$TDWEB_ROOT/package.json" "$TDWEB_ROOT/package-lock.json" "$TDWEB_BUILD/"
   cp "$WASM_ROOT/td_wasm.wasm" "$TDWEB_BUILD/src/prebuilt/release/td_wasm.wasm"
-  cp "$WASM_ROOT/td_wasm.js" "$TDWEB_BUILD/td_wasm.js"
+  sed 's/createTdwebModule\.ready\.FS=Module\.FS;/Module["FS"]=FS;/' \
+    "$WASM_ROOT/td_wasm.js" > "$TDWEB_BUILD/td_wasm.js"
   awk '
     /const td_module = await import\('\''\.\/prebuilt\/release\/td_wasm\.js'\''\);/ {
       print "  importScripts('\''/tdweb/td_wasm.js'\'');"
       print "  /* eslint-disable no-undef */"
       print "  const td_module = { default: globalThis.createTdwebModule };"
+      next
+    }
+    /onRuntimeInitialized: \(\) => \{/ {
+      skip_runtime_callback = 1
+      next
+    }
+    skip_runtime_callback && /^[[:space:]]*},$/ {
+      skip_runtime_callback = 0
+      next
+    }
+    skip_runtime_callback { next }
+    /module = await module;/ {
+      print
+      print "  onFS(module.FS);"
       next
     }
     { print }

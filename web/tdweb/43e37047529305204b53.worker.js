@@ -3497,10 +3497,6 @@ function _loadTdlibWasm() {
             td_wasm = wasmUrl;
           }
           module = createTdwebModule({
-            onRuntimeInitialized: function onRuntimeInitialized() {
-              logger.info('runtime initialized');
-              onFS(module.FS);
-            },
             instantiateWasm: function instantiateWasm(imports, successCallback) {
               logger.info('start instantiateWasm', td_wasm, imports);
               var next = function next(instance) {
@@ -3516,6 +3512,7 @@ function _loadTdlibWasm() {
           return module;
         case 1:
           module = _context28.v;
+          onFS(module.FS);
           logger.info('Loaded module', module);
           //onFS(module.FS);
           return _context28.a(2, module);
