@@ -1,0 +1,392 @@
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:lottie/lottie.dart';
+
+import '../../../telegram/client.dart';
+import '../../widgets/dialog.dart';
+import 'password_screen.dart';
+
+class CodeScreen extends StatefulWidget {
+  final TelegramClient client;
+  final String phoneNumber;
+
+  const CodeScreen({
+    required this.client,
+    required this.phoneNumber,
+    super.key,
+  });
+
+  @override
+  State<CodeScreen> createState() => _CodeScreenState();
+}
+
+class _CodeScreenState extends State<CodeScreen>
+    with SingleTickerProviderStateMixin {
+  final _codeController = TextEditingController();
+  final _focusNode = FocusNode();
+  late final AnimationController _shakeController;
+
+  bool _isVerifying = false;
+  bool? _isCorrect;
+  bool _isClearingCode = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _shakeController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 360),
+    );
+    _codeController.addListener(_onCodeChanged);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _focusNode.requestFocus();
+    });
+  }
+
+  @override
+  void dispose() {
+    _codeController
+      ..removeListener(_onCodeChanged)
+      ..dispose();
+    _focusNode.dispose();
+    _shakeController.dispose();
+    super.dispose();
+  }
+
+  void _onCodeChanged() {
+    if (_isClearingCode) return;
+    setState(() {
+      if (_codeController.text.length < 5) _isCorrect = null;
+    });
+    if (_codeController.text.length == 5 && !_isVerifying) {
+      _verifyCode(_codeController.text);
+    }
+  }
+
+  Future<void> _verifyCode(String code) async {
+    if (code.length != 5 || _isVerifying) return;
+
+    setState(() {
+      _isVerifying = true;
+    });
+
+    try {
+      final result = await widget.client.checkAuthenticationCode(code: code);
+      if (!mounted) return;
+      if (result == AuthenticationCodeResult.passwordRequired) {
+        setState(() {
+          _isVerifying = false;
+          _isCorrect = false;
+        });
+        _isClearingCode = true;
+        _codeController.clear();
+        _isClearingCode = false;
+        await Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => PasswordScreen(client: widget.client),
+          ),
+        );
+        return;
+      }
+      setState(() {
+        _isVerifying = false;
+        _isCorrect = true;
+      });
+      await Future<void>.delayed(const Duration(milliseconds: 420));
+      if (mounted) {
+        debugPrint('Код подтверждён');
+        Navigator.pop(context);
+      }
+    } on Object catch (error) {
+      if (!mounted) return;
+      final message = error.toString().replaceFirst('Bad state: ', '');
+      final isPasswordRequired = message.toLowerCase().contains('password');
+      setState(() {
+        _isVerifying = false;
+        _isCorrect = false;
+      });
+      _shakeController.forward(from: 0);
+      _isClearingCode = true;
+      _codeController.clear();
+      _isClearingCode = false;
+      await TelefyDialog.show(
+        context,
+        title: isPasswordRequired ? 'Требуется пароль' : 'Неверный код',
+        message: isPasswordRequired
+            ? 'Для этого аккаунта требуется пароль 2FA.'
+            : 'Проверьте код и попробуйте ещё раз.',
+        actions: [
+          TelefyDialogAction(
+            label: 'Понятно',
+            onPressed: _focusNode.requestFocus,
+          ),
+        ],
+      );
+      await Future<void>.delayed(const Duration(milliseconds: 400));
+      if (mounted && _codeController.text.isEmpty) {
+        setState(() => _isCorrect = null);
+      }
+    }
+  }
+
+  void _submit() => _verifyCode(_codeController.text);
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Scaffold(
+      appBar: AppBar(
+        leading: IconButton(
+          tooltip: 'Назад',
+          icon: const Icon(Icons.arrow_back_rounded),
+          onPressed: _isVerifying ? null : () => Navigator.pop(context),
+        ),
+      ),
+      body: SafeArea(
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            final contentWidth = constraints.maxWidth.clamp(0.0, 460.0);
+            final spacing = contentWidth < 360 ? 6.0 : 8.0;
+            final cellSize = ((contentWidth - spacing * 4) / 5).clamp(
+              40.0,
+              64.0,
+            );
+            return Center(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.fromLTRB(24, 12, 24, 32),
+                child: SizedBox(
+                  width: contentWidth,
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      SizedBox(
+                        width: 150,
+                        height: 150,
+                        child: Lottie.asset(
+                          'assets/animations/safe.tgs',
+                          decoder: LottieComposition.decodeGZip,
+                          fit: BoxFit.contain,
+                          repeat: true,
+                          animate: true,
+                        ),
+                      ),
+                      const SizedBox(height: 20),
+                      const Text(
+                        'Введите код',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          fontSize: 30,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                      const SizedBox(height: 10),
+                      Text(
+                        'Мы отправили код подтверждения на номер',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          fontSize: 16,
+                          color: theme.colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        widget.phoneNumber,
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(
+                          fontSize: 17,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      const SizedBox(height: 28),
+                      _CodeInput(
+                        controller: _codeController,
+                        focusNode: _focusNode,
+                        cellSize: cellSize,
+                        spacing: spacing,
+                        isVerifying: _isVerifying,
+                        isCorrect: _isCorrect,
+                        shakeAnimation: _shakeController,
+                      ),
+                      SizedBox(
+                        height: 28,
+                        child: _isVerifying
+                            ? const Padding(
+                                padding: EdgeInsets.only(top: 10),
+                                child: SizedBox(
+                                  width: 16,
+                                  height: 16,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                  ),
+                                ),
+                              )
+                            : null,
+                      ),
+                      const SizedBox(height: 12),
+                      SizedBox(
+                        width: double.infinity,
+                        height: 52,
+                        child: FilledButton(
+                          onPressed:
+                              _codeController.text.length == 5 && !_isVerifying
+                              ? _submit
+                              : null,
+                          child: const Text('Продолжить'),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            );
+          },
+        ),
+      ),
+    );
+  }
+}
+
+class _CodeInput extends StatelessWidget {
+  final TextEditingController controller;
+  final FocusNode focusNode;
+  final double cellSize;
+  final double spacing;
+  final bool isVerifying;
+  final bool? isCorrect;
+  final Animation<double> shakeAnimation;
+
+  const _CodeInput({
+    required this.controller,
+    required this.focusNode,
+    required this.cellSize,
+    required this.spacing,
+    required this.isVerifying,
+    required this.isCorrect,
+    required this.shakeAnimation,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: shakeAnimation,
+      builder: (context, child) {
+        final progress = shakeAnimation.value;
+        final offset =
+            (progress < 0.5 ? progress * 2 : (1 - progress) * 2) * 10;
+        return Transform.translate(
+          offset: Offset(offset * (progress < 0.5 ? -1 : 1), 0),
+          child: child,
+        );
+      },
+      child: GestureDetector(
+        onTap: focusNode.requestFocus,
+        child: Stack(
+          alignment: Alignment.center,
+          children: [
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: List.generate(
+                5,
+                (index) => Padding(
+                  padding: EdgeInsets.only(right: index == 4 ? 0 : spacing),
+                  child: _CodeCell(
+                    value: index < controller.text.length
+                        ? controller.text[index]
+                        : null,
+                    isActive:
+                        index == controller.text.length &&
+                        !isVerifying &&
+                        isCorrect == null,
+                    isCorrect: isCorrect,
+                    size: cellSize,
+                  ),
+                ),
+              ),
+            ),
+            Positioned(
+              width: 1,
+              height: 1,
+              child: Opacity(
+                opacity: 0,
+                child: TextField(
+                  controller: controller,
+                  focusNode: focusNode,
+                  maxLength: 5,
+                  keyboardType: TextInputType.number,
+                  textInputAction: TextInputAction.done,
+                  inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                  decoration: const InputDecoration(
+                    counterText: '',
+                    border: InputBorder.none,
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _CodeCell extends StatelessWidget {
+  final String? value;
+  final bool isActive;
+  final bool? isCorrect;
+  final double size;
+
+  const _CodeCell({
+    required this.value,
+    required this.isActive,
+    required this.isCorrect,
+    required this.size,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final borderColor = isCorrect == true
+        ? Colors.green
+        : isCorrect == false
+        ? colorScheme.error
+        : isActive
+        ? colorScheme.primary
+        : Colors.grey.shade300;
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 150),
+      width: size,
+      height: size,
+      alignment: Alignment.center,
+      decoration: BoxDecoration(
+        color: isCorrect == true
+            ? Colors.green.withValues(alpha: 0.08)
+            : isCorrect == false
+            ? colorScheme.error.withValues(alpha: 0.08)
+            : colorScheme.surface,
+        border: Border.all(color: borderColor, width: isActive ? 2 : 1),
+        borderRadius: BorderRadius.circular(15),
+      ),
+      child: AnimatedSwitcher(
+        duration: const Duration(milliseconds: 120),
+        transitionBuilder: (child, animation) =>
+            ScaleTransition(scale: animation, child: child),
+        child: isCorrect == true
+            ? Icon(
+                Icons.check_rounded,
+                key: const ValueKey('success'),
+                color: Colors.green,
+                size: 30,
+              )
+            : Text(
+                value ?? '',
+                key: ValueKey(value),
+                style: const TextStyle(
+                  fontSize: 28,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+      ),
+    );
+  }
+}

@@ -3,13 +3,21 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:lottie/lottie.dart';
 
+import '../../../telegram/client.dart';
+import '../../widgets/dialog.dart';
+import '../../widgets/loading.dart';
+import 'internal/auth.dart';
+import 'code_screen.dart';
+
 class AnonymousNumber {
   static const phoneCode = '888';
   static const emoji = '🏴‍☠️';
 }
 
 class PhoneNumberScreen extends StatefulWidget {
-  const PhoneNumberScreen({super.key});
+  final TelegramClient client;
+
+  const PhoneNumberScreen({required this.client, super.key});
 
   @override
   State<PhoneNumberScreen> createState() => _PhoneNumberScreenState();
@@ -18,6 +26,7 @@ class PhoneNumberScreen extends StatefulWidget {
 class _PhoneNumberScreenState extends State<PhoneNumberScreen> {
   final FocusNode _focusNode = FocusNode();
   bool _isAnonymousNumber = false;
+  bool _isRequestingCode = false;
   final TextEditingController _phoneController = TextEditingController();
 
   Country? _selectedCountry = Country.parse('RU');
@@ -93,10 +102,12 @@ class _PhoneNumberScreenState extends State<PhoneNumberScreen> {
     );
   }
 
-  void _continue() {
-    if (!_canContinue) {
+  Future<void> _continue() async {
+    if (!_canContinue || _isRequestingCode) {
       return;
     }
+
+    setState(() => _isRequestingCode = true);
 
     final phone = _phoneController.text.trim();
 
@@ -105,18 +116,44 @@ class _PhoneNumberScreenState extends State<PhoneNumberScreen> {
         : _selectedCountry!.phoneCode;
     final fullPhoneNumber = '+$phoneCode$phone';
 
-    debugPrint('Телефон: $fullPhoneNumber');
-
-    // Здесь позже можно открыть экран подтверждения кода:
-    //
-    // Navigator.push(
-    //   context,
-    //   MaterialPageRoute(
-    //     builder: (_) => VerificationCodeScreen(
-    //       phoneNumber: fullPhoneNumber,
-    //     ),
-    //   ),
-    // );
+    try {
+      await requestAuthenticationCode(
+        client: widget.client,
+        phoneNumber: fullPhoneNumber,
+      );
+      if (!mounted) {
+        return;
+      }
+      await Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) =>
+              CodeScreen(client: widget.client, phoneNumber: fullPhoneNumber),
+        ),
+      );
+    } on Object catch (error) {
+      debugPrint('Не удалось запросить код: $error');
+      if (mounted) {
+        final message = error.toString().replaceFirst('Bad state: ', '');
+        final isFloodWait =
+            message.contains('429') ||
+            message.toLowerCase().contains('flood_wait');
+        await TelefyDialog.show(
+          context,
+          title: isFloodWait
+              ? 'Код пока недоступен'
+              : 'Не удалось получить код',
+          message: isFloodWait
+              ? 'Telegram временно ограничил запросы. Попробуйте снова позже.'
+              : 'Проверьте номер телефона и попробуйте ещё раз.',
+          actions: [TelefyDialogAction(label: 'Понятно', onPressed: () {})],
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isRequestingCode = false);
+      }
+    }
   }
 
   @override
@@ -124,234 +161,256 @@ class _PhoneNumberScreenState extends State<PhoneNumberScreen> {
     final theme = Theme.of(context);
 
     return Scaffold(
-      body: KeyboardListener(
-        focusNode: _focusNode,
-        autofocus: true,
-        child: SafeArea(
-          child: LayoutBuilder(
-            builder: (context, constraints) {
-              final width = constraints.maxWidth;
-              final height = constraints.maxHeight;
+      body: Stack(
+        children: [
+          KeyboardListener(
+            focusNode: _focusNode,
+            autofocus: true,
+            child: SafeArea(
+              child: LayoutBuilder(
+                builder: (context, constraints) {
+                  final width = constraints.maxWidth;
+                  final height = constraints.maxHeight;
 
-              final titleSize = _responsiveSize(
-                30,
-                width,
-                height,
-                min: 24,
-                max: 36,
-              );
+                  final titleSize = _responsiveSize(
+                    30,
+                    width,
+                    height,
+                    min: 24,
+                    max: 36,
+                  );
 
-              final descriptionSize = _responsiveSize(
-                17,
-                width,
-                height,
-                min: 14,
-                max: 19,
-              );
+                  final descriptionSize = _responsiveSize(
+                    17,
+                    width,
+                    height,
+                    min: 14,
+                    max: 19,
+                  );
 
-              final horizontalPadding = width < 500 ? 24.0 : 32.0;
+                  final horizontalPadding = width < 500 ? 24.0 : 32.0;
 
-              return Padding(
-                padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
-                child: Column(
-                  children: [
-                    const Spacer(flex: 2),
-
-                    SizedBox(
-                      width: _responsiveSize(
-                        180,
-                        width,
-                        height,
-                        min: 64,
-                        max: 196,
-                      ),
-                      height: _responsiveSize(
-                        180,
-                        width,
-                        height,
-                        min: 64,
-                        max: 196,
-                      ),
-                      child: Lottie.asset(
-                        'assets/animations/communicate.tgs',
-                        decoder: LottieComposition.decodeGZip,
-                        fit: BoxFit.contain,
-                        repeat: true,
-                        animate: true,
-                      ),
+                  return Padding(
+                    padding: EdgeInsets.symmetric(
+                      horizontal: horizontalPadding,
                     ),
+                    child: Column(
+                      children: [
+                        const Spacer(flex: 2),
 
-                    SizedBox(
-                      height: _responsiveSize(
-                        32,
-                        width,
-                        height,
-                        min: 20,
-                        max: 36,
-                      ),
-                    ),
-
-                    Text(
-                      'Введите номер телефона',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        fontSize: titleSize,
-                        height: 1.1,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-
-                    const SizedBox(height: 12),
-
-                    ConstrainedBox(
-                      constraints: const BoxConstraints(maxWidth: 420),
-                      child: Text(
-                        'Мы отправим код подтверждения на ваш номер телефона',
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                          fontSize: descriptionSize,
-                          height: 1.4,
-                          color: Colors.grey.shade600,
-                        ),
-                      ),
-                    ),
-
-                    SizedBox(
-                      height: _responsiveSize(
-                        36,
-                        width,
-                        height,
-                        min: 24,
-                        max: 44,
-                      ),
-                    ),
-
-                    ConstrainedBox(
-                      constraints: const BoxConstraints(maxWidth: 500),
-                      child: Container(
-                        height: 56,
-                        decoration: BoxDecoration(
-                          border: Border.all(
-                            color: _phoneController.text.isNotEmpty
-                                ? theme.colorScheme.primary
-                                : Colors.grey.shade300,
+                        SizedBox(
+                          width: _responsiveSize(
+                            180,
+                            width,
+                            height,
+                            min: 64,
+                            max: 200,
                           ),
-                          borderRadius: BorderRadius.circular(16),
+                          height: _responsiveSize(
+                            180,
+                            width,
+                            height,
+                            min: 64,
+                            max: 200,
+                          ),
+                          child: Lottie.asset(
+                            'assets/animations/communicate.tgs',
+                            decoder: LottieComposition.decodeGZip,
+                            fit: BoxFit.contain,
+                            repeat: true,
+                            animate: true,
+                          ),
                         ),
-                        child: Row(
-                          children: [
-                            // Выбор страны и кода
-                            InkWell(
-                              onTap: _selectCountry,
-                              borderRadius: const BorderRadius.only(
-                                topLeft: Radius.circular(16),
-                                bottomLeft: Radius.circular(16),
+
+                        SizedBox(
+                          height: _responsiveSize(
+                            32,
+                            width,
+                            height,
+                            min: 20,
+                            max: 36,
+                          ),
+                        ),
+
+                        Text(
+                          'Введите номер телефона',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            fontSize: titleSize,
+                            height: 1.1,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+
+                        const SizedBox(height: 12),
+
+                        ConstrainedBox(
+                          constraints: const BoxConstraints(maxWidth: 420),
+                          child: Text(
+                            'Мы отправим код подтверждения на ваш номер телефона',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              fontSize: descriptionSize,
+                              height: 1.4,
+                              color: Colors.grey.shade600,
+                            ),
+                          ),
+                        ),
+
+                        SizedBox(
+                          height: _responsiveSize(
+                            36,
+                            width,
+                            height,
+                            min: 24,
+                            max: 44,
+                          ),
+                        ),
+
+                        ConstrainedBox(
+                          constraints: const BoxConstraints(maxWidth: 500),
+                          child: Container(
+                            height: 56,
+                            decoration: BoxDecoration(
+                              border: Border.all(
+                                color: _phoneController.text.isNotEmpty
+                                    ? theme.colorScheme.primary
+                                    : Colors.grey.shade300,
                               ),
-                              child: SizedBox(
-                                width: 150,
-                                child: Padding(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 12,
+                              borderRadius: BorderRadius.circular(16),
+                            ),
+                            child: Row(
+                              children: [
+                                // Выбор страны и кода
+                                InkWell(
+                                  onTap: _selectCountry,
+                                  borderRadius: const BorderRadius.only(
+                                    topLeft: Radius.circular(16),
+                                    bottomLeft: Radius.circular(16),
                                   ),
-                                  child: Row(
-                                    children: [
-                                      Text(
-                                        _isAnonymousNumber
-                                            ? AnonymousNumber.emoji
-                                            : _selectedCountry!.flagEmoji,
-                                        style: const TextStyle(fontSize: 21),
+                                  child: SizedBox(
+                                    width: 150,
+                                    child: Padding(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 12,
                                       ),
-
-                                      const SizedBox(width: 7),
-
-                                      SizedBox(
-                                        width: 72,
-                                        child: Text(
-                                          _isAnonymousNumber
-                                              ? '+${AnonymousNumber.phoneCode}'
-                                              : '+${_selectedCountry!.phoneCode}',
-                                          maxLines: 1,
-                                          overflow: TextOverflow.ellipsis,
-                                          style: const TextStyle(
-                                            fontSize: 17,
-                                            fontWeight: FontWeight.w500,
+                                      child: Row(
+                                        children: [
+                                          Text(
+                                            _isAnonymousNumber
+                                                ? AnonymousNumber.emoji
+                                                : _selectedCountry!.flagEmoji,
+                                            style: const TextStyle(
+                                              fontSize: 21,
+                                            ),
                                           ),
-                                        ),
-                                      ),
 
-                                      Icon(
-                                        Icons.keyboard_arrow_down_rounded,
-                                        size: 19,
-                                        color: Colors.grey.shade600,
+                                          const SizedBox(width: 7),
+
+                                          SizedBox(
+                                            width: 72,
+                                            child: Text(
+                                              _isAnonymousNumber
+                                                  ? '+${AnonymousNumber.phoneCode}'
+                                                  : '+${_selectedCountry!.phoneCode}',
+                                              maxLines: 1,
+                                              overflow: TextOverflow.ellipsis,
+                                              style: const TextStyle(
+                                                fontSize: 17,
+                                                fontWeight: FontWeight.w500,
+                                              ),
+                                            ),
+                                          ),
+
+                                          Icon(
+                                            Icons.keyboard_arrow_down_rounded,
+                                            size: 19,
+                                            color: Colors.grey.shade600,
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                                // Разделитель
+                                Container(
+                                  width: 1,
+                                  height: 28,
+                                  color: Colors.grey.shade300,
+                                ),
+
+                                // Номер телефона
+                                Expanded(
+                                  child: TextField(
+                                    controller: _phoneController,
+                                    keyboardType: TextInputType.phone,
+                                    textInputAction: TextInputAction.done,
+                                    inputFormatters: [
+                                      FilteringTextInputFormatter.allow(
+                                        RegExp(r'[0-9\s\-\(\)]'),
                                       ),
                                     ],
+                                    decoration: const InputDecoration(
+                                      hintText: 'Номер телефона',
+                                      border: InputBorder.none,
+                                      contentPadding: EdgeInsets.symmetric(
+                                        horizontal: 12,
+                                      ),
+                                    ),
+                                    onSubmitted: (_) {
+                                      if (_canContinue) {
+                                        _continue();
+                                      }
+                                    },
                                   ),
                                 ),
-                              ),
+                              ],
                             ),
-                            // Разделитель
-                            Container(
-                              width: 1,
-                              height: 28,
-                              color: Colors.grey.shade300,
-                            ),
-
-                            // Номер телефона
-                            Expanded(
-                              child: TextField(
-                                controller: _phoneController,
-                                keyboardType: TextInputType.phone,
-                                textInputAction: TextInputAction.done,
-                                inputFormatters: [
-                                  FilteringTextInputFormatter.allow(
-                                    RegExp(r'[0-9\s\-\(\)]'),
-                                  ),
-                                ],
-                                decoration: const InputDecoration(
-                                  hintText: 'Номер телефона',
-                                  border: InputBorder.none,
-                                  contentPadding: EdgeInsets.symmetric(
-                                    horizontal: 12,
-                                  ),
-                                ),
-                                onSubmitted: (_) {
-                                  if (_canContinue) {
-                                    _continue();
-                                  }
-                                },
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                    const Spacer(flex: 3),
-
-                    SizedBox(
-                      width: double.infinity,
-                      height: 56,
-                      child: FilledButton(
-                        onPressed: _canContinue ? _continue : null,
-                        style: FilledButton.styleFrom(
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(18),
-                          ),
-                          textStyle: const TextStyle(
-                            fontSize: 17,
-                            fontWeight: FontWeight.w600,
                           ),
                         ),
-                        child: const Text('Продолжить'),
-                      ),
-                    ),
+                        const Spacer(flex: 3),
 
-                    const SizedBox(height: 24),
-                  ],
-                ),
-              );
-            },
+                        SizedBox(
+                          width: double.infinity,
+                          height: 56,
+                          child: FilledButton(
+                            onPressed: _canContinue && !_isRequestingCode
+                                ? _continue
+                                : null,
+                            style: FilledButton.styleFrom(
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(18),
+                              ),
+                              textStyle: const TextStyle(
+                                fontSize: 17,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                            child: const Text('Продолжить'),
+                          ),
+                        ),
+
+                        const SizedBox(height: 24),
+                      ],
+                    ),
+                  );
+                },
+              ),
+            ),
           ),
-        ),
+          if (_isRequestingCode)
+            Positioned.fill(
+              child: ColoredBox(
+                color: Colors.black12,
+                child: Center(
+                  child: Loading(
+                    size: 112,
+                    color: Theme.of(context).colorScheme.primary,
+                  ),
+                ),
+              ),
+            ),
+        ],
       ),
     );
   }

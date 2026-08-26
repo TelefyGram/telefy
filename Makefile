@@ -6,6 +6,9 @@ BUILD_ROOT := $(ROOT)/build
 ANDROID_GRADLE_BUILD_ROOT := $(BUILD_ROOT)/android
 TDLIB_BUILD := $(BUILD_ROOT)/android/tdlib
 TELEFY_BUILD := $(BUILD_ROOT)/android/telefy
+MACOS_TDLIB_BUILD := $(BUILD_ROOT)/macos/tdlib
+MACOS_TELEFY_BUILD := $(BUILD_ROOT)/macos/telefy
+MACOS_OPENSSL_LIB_DIR := $(shell brew --prefix openssl@3 2>/dev/null)/lib
 ANDROID_JNI_DIR := $(ROOT)/android/app/src/main/jniLibs
 DIST := $(ROOT)/dist
 
@@ -140,6 +143,56 @@ ifeq ($(PLATFORM),android)
 			fi; \
 		done'
 else
+	@if [ "$(PLATFORM)" = "macos" ]; then \
+		mkdir -p "$(MACOS_TDLIB_BUILD)" "$(MACOS_TELEFY_BUILD)"; \
+		if [ ! -e "$(MACOS_TDLIB_BUILD)/lib/libtdjson.dylib" ] && [ -f "$(MACOS_TDLIB_BUILD)/CMakeCache.txt" ]; then \
+			rm -rf "$(MACOS_TDLIB_BUILD)"; \
+			mkdir -p "$(MACOS_TDLIB_BUILD)"; \
+		fi; \
+		if [ ! -f "$(MACOS_TDLIB_BUILD)/lib/libtdjson.dylib" ]; then \
+			cmake -S "$(TDLIB)" -B "$(MACOS_TDLIB_BUILD)" -G Ninja \
+				-DCMAKE_BUILD_TYPE=Release \
+				-DCMAKE_INSTALL_PREFIX="$(MACOS_TDLIB_BUILD)" \
+				-DTD_INSTALL_STATIC_LIBRARIES=OFF \
+				-DTD_INSTALL_SHARED_LIBRARIES=ON \
+				-DTD_ENABLE_JNI=OFF \
+				-DTD_ENABLE_DOTNET=OFF; \
+		fi; \
+		tdlib_needs_build=0; \
+		if [ ! -e "$(MACOS_TDLIB_BUILD)/lib/libtdjson.dylib" ] || [ ! -f "$(MACOS_TDLIB_BUILD)/CMakeCache.txt" ] || [ ! -f "$(MACOS_TDLIB_BUILD)/build.ninja" ] || \
+			find "$(TDLIB)" -type f -newer "$(MACOS_TDLIB_BUILD)/lib/libtdjson.dylib" -print -quit | grep -q .; then \
+			tdlib_needs_build=1; \
+		fi; \
+		if [ "$$tdlib_needs_build" = "1" ] || [ "$(FORCE_NATIVE_BUILD)" = "1" ]; then \
+			cmake --build "$(MACOS_TDLIB_BUILD)" --target tdjson --parallel $(JOBS); \
+			cmake --install "$(MACOS_TDLIB_BUILD)"; \
+		else \
+			echo "TDLib macOS: cached"; \
+		fi; \
+		if [ ! -e "$(MACOS_TELEFY_BUILD)/lib/libtelefy.dylib" ] && [ -f "$(MACOS_TELEFY_BUILD)/CMakeCache.txt" ]; then \
+			rm -rf "$(MACOS_TELEFY_BUILD)"; \
+			mkdir -p "$(MACOS_TELEFY_BUILD)"; \
+		fi; \
+		if [ ! -f "$(MACOS_TELEFY_BUILD)/lib/libtelefy.dylib" ]; then \
+			cmake -S "$(ROOT)/native/tdlib" -B "$(MACOS_TELEFY_BUILD)" -G Ninja \
+				-DCMAKE_BUILD_TYPE=Release \
+				-DDTDJSON_ROOT="$(MACOS_TDLIB_BUILD)" \
+				-DCMAKE_PREFIX_PATH="$(MACOS_TDLIB_BUILD)" \
+				-DCMAKE_INSTALL_PREFIX="$(MACOS_TELEFY_BUILD)"; \
+		fi; \
+		telefy_needs_build=0; \
+		if [ ! -e "$(MACOS_TELEFY_BUILD)/lib/libtelefy.dylib" ] || [ ! -f "$(MACOS_TELEFY_BUILD)/CMakeCache.txt" ] || [ ! -f "$(MACOS_TELEFY_BUILD)/build.ninja" ] || \
+			find "$(ROOT)/native/tdlib" -type f -newer "$(MACOS_TELEFY_BUILD)/lib/libtelefy.dylib" -print -quit | grep -q .; then \
+			telefy_needs_build=1; \
+		fi; \
+		if [ "$$telefy_needs_build" = "1" ] || [ "$(FORCE_NATIVE_BUILD)" = "1" ]; then \
+			cmake --build "$(MACOS_TELEFY_BUILD)" --target telefy --parallel $(JOBS); \
+			cmake --install "$(MACOS_TELEFY_BUILD)"; \
+		else \
+			echo "Telefy macOS: cached"; \
+		fi; \
+		install_name_tool -change "@rpath/libtdjson.1.8.67.dylib" "@rpath/libtdjson.dylib" "$(MACOS_TELEFY_BUILD)/lib/libtelefy.dylib"; \
+	fi
 	@:
 endif
 
@@ -149,19 +202,20 @@ app:
 	@test -f .env || (echo ".env is missing; create it with: cp .env.example .env"; exit 1)
 	@bash -lc 'set -a; source .env 2>/dev/null || true; set +a; source "$(ROOT)/scripts/deps.sh"; telefy_detect_environment; if [ -z "$$FLUTTER_BIN" ]; then echo "Flutter is required. Run make setup"; exit 1; fi; if [ -z "$$TELEGRAM_API_ID" ] || [ -z "$$TELEGRAM_API_HASH" ]; then echo "TELEGRAM_API_ID and TELEGRAM_API_HASH are required in .env"; exit 1; fi'
 	$(MAKE) native PLATFORM=$(PLATFORM) BUILD_MODE=$(BUILD_MODE)
-	$(MAKE) package-native PLATFORM=$(PLATFORM)
+	@if [ "$(PLATFORM)" = "android" ]; then $(MAKE) package-native PLATFORM=android; fi
 	@if [ "$(PLATFORM)" = "android" ]; then \
 		$(FLUTTER) pub get; \
 		$(FLUTTER) build apk --$(BUILD_MODE) \
 			--target-platform android-arm64,android-x64 \
-			--dart-define=TELEGRAM_API_ID=$$(grep -E '^TELEGRAM_API_ID=' .env | cut -d= -f2-) \
-			--dart-define=TELEGRAM_API_HASH=$$(grep -E '^TELEGRAM_API_HASH=' .env | cut -d= -f2-) && \
+			--dart-define=TELEGRAM_API_ID=$(TELEGRAM_API_ID) \
+			--dart-define=TELEGRAM_API_HASH=$(TELEGRAM_API_HASH) && \
 			mv -f "$(BUILD_ROOT)/app/outputs/flutter-apk/app-$(BUILD_MODE).apk" "$(BUILD_ROOT)/app/outputs/flutter-apk/telefy-$(BUILD_MODE).apk"; \
 	else \
 		$(FLUTTER) build $(PLATFORM) --$(BUILD_MODE) \
-			--dart-define=TELEGRAM_API_ID=$$(grep -E '^TELEGRAM_API_ID=' .env | cut -d= -f2-) \
-			--dart-define=TELEGRAM_API_HASH=$$(grep -E '^TELEGRAM_API_HASH=' .env | cut -d= -f2-); \
+			--dart-define=TELEGRAM_API_ID=$(TELEGRAM_API_ID) \
+			--dart-define=TELEGRAM_API_HASH=$(TELEGRAM_API_HASH); \
 	fi
+	@if [ "$(PLATFORM)" = "macos" ]; then $(MAKE) package-native PLATFORM=macos BUILD_MODE=$(BUILD_MODE); fi
 
 split-apk:
 	@test -f .env || (echo ".env is missing; create it with: cp .env.example .env"; exit 1)
@@ -187,6 +241,32 @@ package-native:
 			cp -f "$(TDLIB_BUILD)/$$abi/lib/libtdjson.so" "$(ANDROID_JNI_DIR)/$$abi/"; \
 			cp -f "$(TELEFY_BUILD)/$$abi/lib/libtelefy.so" "$(ANDROID_JNI_DIR)/$$abi/"; \
 		done; \
+	elif [ "$(PLATFORM)" = "macos" ]; then \
+		frameworks_dir="$(BUILD_ROOT)/macos/Build/Products/$(if $(filter debug,$(BUILD_MODE)),Debug,Release)/telefy.app/Contents/Frameworks"; \
+		mkdir -p "$$frameworks_dir"; \
+		cp -f "$(MACOS_TDLIB_BUILD)/lib/libtdjson.dylib" "$$frameworks_dir/"; \
+		cp -f "$(MACOS_TELEFY_BUILD)/lib/libtelefy.dylib" "$$frameworks_dir/"; \
+		cp -f "$(MACOS_OPENSSL_LIB_DIR)/libssl.3.dylib" "$$frameworks_dir/"; \
+		cp -f "$(MACOS_OPENSSL_LIB_DIR)/libcrypto.3.dylib" "$$frameworks_dir/"; \
+		install_name_tool -id "@rpath/libtdjson.dylib" "$$frameworks_dir/libtdjson.dylib"; \
+		install_name_tool -id "@rpath/libssl.3.dylib" "$$frameworks_dir/libssl.3.dylib"; \
+		install_name_tool -id "@rpath/libcrypto.3.dylib" "$$frameworks_dir/libcrypto.3.dylib"; \
+		install_name_tool -change "/opt/homebrew/opt/openssl@3/lib/libssl.3.dylib" "@rpath/libssl.3.dylib" "$$frameworks_dir/libtdjson.dylib"; \
+		install_name_tool -change "/opt/homebrew/opt/openssl@3/lib/libcrypto.3.dylib" "@rpath/libcrypto.3.dylib" "$$frameworks_dir/libtdjson.dylib"; \
+		install_name_tool -change "/usr/local/opt/openssl@3/lib/libssl.3.dylib" "@rpath/libssl.3.dylib" "$$frameworks_dir/libtdjson.dylib"; \
+		install_name_tool -change "/usr/local/opt/openssl@3/lib/libcrypto.3.dylib" "@rpath/libcrypto.3.dylib" "$$frameworks_dir/libtdjson.dylib"; \
+		for library in "$$frameworks_dir/libtdjson.dylib" "$$frameworks_dir/libssl.3.dylib" "$$frameworks_dir/libcrypto.3.dylib"; do \
+			while IFS= read -r dependency; do \
+				dependency="$$(printf '%s' "$$dependency" | sed 's/^[[:space:]]*//')"; \
+				case "$$dependency" in \
+					*/libssl.3.dylib|*/libcrypto.3.dylib) \
+						install_name_tool -change "$$dependency" "@rpath/$$(basename "$$dependency")" "$$library"; \
+						;; \
+				 esac; \
+			done < <(otool -L "$$library" | tail -n +2 | sed 's/ (.*//' ); \
+		done; \
+		install_name_tool -change "@rpath/libtdjson.1.8.67.dylib" "@rpath/libtdjson.dylib" "$$frameworks_dir/libtelefy.dylib"; \
+		codesign --force --deep --sign - "$(BUILD_ROOT)/macos/Build/Products/$(if $(filter debug,$(BUILD_MODE)),Debug,Release)/telefy.app"; \
 	fi
 
 clean:

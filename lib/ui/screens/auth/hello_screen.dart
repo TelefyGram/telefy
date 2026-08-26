@@ -2,10 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:lottie/lottie.dart';
 import 'package:flutter/services.dart';
 
+import '../../../telegram/client.dart';
 import 'phone_screen.dart';
 
 class OnboardingScreen extends StatefulWidget {
-  const OnboardingScreen({super.key});
+  final TelegramClient client;
+
+  const OnboardingScreen({required this.client, super.key});
 
   @override
   State<OnboardingScreen> createState() => _OnboardingScreenState();
@@ -71,7 +74,9 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   void _start() {
     Navigator.pushReplacement(
       context,
-      MaterialPageRoute(builder: (_) => const PhoneNumberScreen()),
+      MaterialPageRoute(
+        builder: (_) => PhoneNumberScreen(client: widget.client),
+      ),
     );
   }
 

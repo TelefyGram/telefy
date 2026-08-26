@@ -6,15 +6,9 @@ import 'package:ffi/ffi.dart';
 typedef CreateNative = Pointer<Void> Function();
 typedef CreateDart = Pointer<Void> Function();
 
-typedef SendNative = Void Function(
-  Pointer<Void> client,
-  Pointer<Utf8> request,
-);
+typedef SendNative = Void Function(Pointer<Void> client, Pointer<Utf8> request);
 
-typedef SendDart = void Function(
-  Pointer<Void> client,
-  Pointer<Utf8> request,
-);
+typedef SendDart = void Function(Pointer<Void> client, Pointer<Utf8> request);
 
 typedef ReceiveNative = Pointer<Utf8> Function(
   Pointer<Void> client,
@@ -26,13 +20,9 @@ typedef ReceiveDart = Pointer<Utf8> Function(
   double timeout,
 );
 
-typedef DestroyNative = Void Function(
-  Pointer<Void> client,
-);
+typedef DestroyNative = Void Function(Pointer<Void> client);
 
-typedef DestroyDart = void Function(
-  Pointer<Void> client,
-);
+typedef DestroyDart = void Function(Pointer<Void> client);
 
 class TdLibBindings {
   late final DynamicLibrary _lib;
@@ -45,21 +35,13 @@ class TdLibBindings {
   TdLibBindings() {
     _lib = _loadLibrary();
 
-    create = _lib.lookupFunction<CreateNative, CreateDart>(
-      'telefy_create',
-    );
+    create = _lib.lookupFunction<CreateNative, CreateDart>('telefy_create');
 
-    send = _lib.lookupFunction<SendNative, SendDart>(
-      'telefy_send',
-    );
+    send = _lib.lookupFunction<SendNative, SendDart>('telefy_send');
 
-    receive = _lib.lookupFunction<ReceiveNative, ReceiveDart>(
-      'telefy_receive',
-    );
+    receive = _lib.lookupFunction<ReceiveNative, ReceiveDart>('telefy_receive');
 
-    destroy = _lib.lookupFunction<DestroyNative, DestroyDart>(
-      'telefy_destroy',
-    );
+    destroy = _lib.lookupFunction<DestroyNative, DestroyDart>('telefy_destroy');
   }
 
   DynamicLibrary _loadLibrary() {
@@ -72,6 +54,7 @@ class TdLibBindings {
     }
 
     if (Platform.isMacOS) {
+      DynamicLibrary.open('libtdjson.dylib');
       return DynamicLibrary.open('libtelefy.dylib');
     }
 
