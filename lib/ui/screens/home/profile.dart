@@ -27,8 +27,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   Future<void> _reload() async {
-    setState(() => _accountFuture = widget.client.getMe());
-    await _accountFuture;
+    final accountFuture = widget.client.getMe();
+    setState(() {
+      _accountFuture = accountFuture;
+    });
+    await accountFuture;
   }
 
   Future<void> _logout() async {

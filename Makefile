@@ -287,6 +287,7 @@ run:
 	fi
 
 run-web:
+	$(MAKE) build-web-wasm
 	$(MAKE) run PLATFORM=web PORT=$(PORT)
 
 run-android:

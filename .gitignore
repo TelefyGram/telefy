@@ -37,6 +37,8 @@ migrate_working_dir/
 
 # Native dependency cache and generated artifacts
 build/
+/web/tdweb/
+/build/tdweb-build/
 android/app/src/main/jniLibs/
 android/app/.cxx/
 android/app/debug/
