@@ -4,6 +4,7 @@ import 'package:lottie/lottie.dart';
 
 import '../../../telegram/client.dart';
 import '../../widgets/dialog.dart';
+import '../home/profile.dart';
 import 'password_screen.dart';
 
 class CodeScreen extends StatefulWidget {
@@ -95,8 +96,13 @@ class _CodeScreenState extends State<CodeScreen>
       });
       await Future<void>.delayed(const Duration(milliseconds: 420));
       if (mounted) {
-        debugPrint('Код подтверждён');
-        Navigator.pop(context);
+        Navigator.pushAndRemoveUntil(
+          context,
+          MaterialPageRoute(
+            builder: (_) => ProfileScreen(client: widget.client),
+          ),
+          (_) => false,
+        );
       }
     } on Object catch (error) {
       if (!mounted) return;

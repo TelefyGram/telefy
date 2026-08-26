@@ -3,9 +3,10 @@ import 'package:lottie/lottie.dart';
 
 import '../../../telegram/client.dart';
 import '../../widgets/dialog.dart';
+import '../home/profile.dart';
 
 class PasswordScreen extends StatefulWidget {
-  final TelegramClient client;
+  final TelegramClientApi client;
 
   const PasswordScreen({required this.client, super.key});
 
@@ -76,8 +77,14 @@ class _PasswordScreenState extends State<PasswordScreen>
         password: _passwordController.text,
       );
       if (!mounted) return;
-      await _showAccount(account);
-      if (mounted) Navigator.pop(context);
+      Navigator.pushAndRemoveUntil(
+        context,
+        MaterialPageRoute(
+          builder: (_) =>
+              ProfileScreen(client: widget.client, initialAccount: account),
+        ),
+        (_) => false,
+      );
     } on Object catch (error) {
       if (!mounted) return;
       debugPrint('Не удалось проверить пароль: $error');
@@ -100,27 +107,6 @@ class _PasswordScreenState extends State<PasswordScreen>
       );
     }
   }
-
-  Future<void> _showAccount(TelegramUserInfo account) {
-    final details = <String>[
-      if (_value(account.firstName) != null || _value(account.lastName) != null)
-        'Имя: ${[account.firstName, account.lastName].whereType<String>().join(' ')}',
-      if (_value(account.username) != null) 'Username: @${account.username}',
-      if (_value(account.phoneNumber) != null)
-        'Телефон: ${account.phoneNumber}',
-      if (account.id != null) 'ID: ${account.id}',
-    ];
-    return TelefyDialog.show(
-      context,
-      title: 'Аккаунт',
-      message: details.isEmpty
-          ? 'Данные аккаунта недоступны.'
-          : details.join('\n'),
-      actions: [TelefyDialogAction(label: 'Понятно', onPressed: () {})],
-    );
-  }
-
-  String? _value(String? value) => value?.trim().isEmpty == true ? null : value;
 
   @override
   Widget build(BuildContext context) {

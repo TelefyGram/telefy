@@ -26,7 +26,30 @@ class TelegramUserInfo {
   });
 }
 
-class TelegramClient {
+abstract interface class TelegramClientApi {
+  String? get authorizationStateType;
+
+  Future<void> initialize({
+    required String systemLanguageCode,
+    required String deviceModel,
+    required String systemVersion,
+    required String appVersion,
+  });
+
+  Future<void> setAuthenticationPhoneNumber({required String phoneNumber});
+
+  Future<AuthenticationCodeResult> checkAuthenticationCode({
+    required String code,
+  });
+
+  Future<TelegramUserInfo> checkAuthenticationPassword({
+    required String password,
+  });
+
+  Future<TelegramUserInfo> getMe();
+}
+
+class TelegramClient implements TelegramClientApi {
   final TdLibBindings _tdlib;
   late final Pointer<Void> _client;
 
@@ -43,6 +66,10 @@ class TelegramClient {
     _client = _tdlib.create();
   }
 
+  @override
+  String? get authorizationStateType => _authorizationStateType;
+
+  @override
   Future<void> initialize({
     required String systemLanguageCode,
     required String deviceModel,
@@ -72,6 +99,7 @@ class TelegramClient {
     }
   }
 
+  @override
   Future<void> setAuthenticationPhoneNumber({
     required String phoneNumber,
     bool allowFlashCall = false,
@@ -121,6 +149,7 @@ class TelegramClient {
     throw StateError('Timed out waiting for authentication code request');
   }
 
+  @override
   Future<AuthenticationCodeResult> checkAuthenticationCode({
     required String code,
   }) async {
@@ -157,6 +186,7 @@ class TelegramClient {
     throw StateError('Timed out waiting for authentication code check');
   }
 
+  @override
   Future<TelegramUserInfo> checkAuthenticationPassword({
     required String password,
   }) async {
@@ -185,6 +215,7 @@ class TelegramClient {
     throw StateError('Timed out waiting for authentication password check');
   }
 
+  @override
   Future<TelegramUserInfo> getMe() async {
     final requestId = 'getMe-${++_requestSequence}';
     send({'@type': 'getMe', '@extra': requestId});
@@ -298,16 +329,19 @@ class TelegramClient {
       'use_test_dc': false,
     });
 
-    await _waitForResponse('setTdlibParameters');
     _tdlibParametersSet = true;
 
     const stateRequestId = 'getAuthorizationState';
     send({'@type': 'getAuthorizationState', '@extra': stateRequestId});
-    await _waitForResponse(stateRequestId);
+    final response = await _waitForResponse(stateRequestId, attempts: 180);
+    _updateAuthorizationState(response);
   }
 
-  Future<Map<String, dynamic>> _waitForResponse(String requestId) async {
-    for (var attempt = 0; attempt < 60; attempt++) {
+  Future<Map<String, dynamic>> _waitForResponse(
+    String requestId, {
+    int attempts = 60,
+  }) async {
+    for (var attempt = 0; attempt < attempts; attempt++) {
       final response = receive();
       if (response == null || response['@extra'] != requestId) {
         continue;
@@ -333,7 +367,15 @@ class TelegramClient {
   }
 
   void _handleAuthorizationState(Map<String, dynamic> response) {
-    final state = response['authorization_state'];
+    _updateAuthorizationState(response);
+  }
+
+  void _updateAuthorizationState(Map<String, dynamic> response) {
+    final state = response['authorization_state'] is Map<String, dynamic>
+        ? response['authorization_state']
+        : response['@type']?.toString().startsWith('authorizationState') == true
+        ? response
+        : null;
     if (state is! Map<String, dynamic>) {
       return;
     }
