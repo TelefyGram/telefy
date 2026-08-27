@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:lottie/lottie.dart';
 import 'package:flutter/services.dart';
 
-import '../../../telegram/client.dart';
+import '../../../tdlib/client.dart';
 import 'internal/onboarding_data.dart';
 import 'phone_screen.dart';
 

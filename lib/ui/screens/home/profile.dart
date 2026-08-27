@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
-import '../../../telegram/client.dart';
+import '../../../tdlib/client.dart';
 import '../../widgets/dialog.dart';
 import '../../widgets/loading.dart';
 import '../auth/hello_screen.dart';

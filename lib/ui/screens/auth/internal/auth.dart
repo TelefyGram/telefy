@@ -1,4 +1,4 @@
-import '../../../../telegram/client.dart';
+import '../../../../tdlib/client.dart';
 
 Future<void> requestAuthenticationCode({
   required TelegramClient client,

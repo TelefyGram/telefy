@@ -2,7 +2,7 @@ import 'package:flutter/widgets.dart';
 
 import 'app.dart';
 import 'logging/app_logger_platform.dart';
-import 'telegram/client.dart';
+import 'tdlib/client.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
