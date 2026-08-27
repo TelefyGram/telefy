@@ -25,9 +25,10 @@ class AppLogger {
 
     _previousDebugPrint = debugPrint;
     debugPrint = (message, {wrapWidth}) {
-      _previousDebugPrint?.call(message, wrapWidth: wrapWidth);
-      if (message != null) {
-        log(message);
+      final safeMessage = message == null ? null : _redactCredentials(message);
+      _previousDebugPrint?.call(safeMessage, wrapWidth: wrapWidth);
+      if (safeMessage != null) {
+        log(safeMessage);
       }
     };
 
@@ -45,11 +46,22 @@ class AppLogger {
     final file = _file;
     if (file == null) return;
 
-    final line = '${DateTime.now().toUtc().toIso8601String()} $message\n';
+    final safeMessage = _redactCredentials(message);
+    final line = '${DateTime.now().toUtc().toIso8601String()} $safeMessage\n';
     _writeQueue = _writeQueue.then((_) async {
       await _removeExpiredLogs(file.parent);
       await file.writeAsString(line, mode: FileMode.append, flush: true);
     });
+  }
+
+  static String _redactCredentials(String message) {
+    return message.replaceAllMapped(
+      RegExp(
+        r'((?:TELEGRAM_API_ID|TELEGRAM_API_HASH|api_id|api_hash)\s*[:=]\s*)([^,\s}\]]+)',
+        caseSensitive: false,
+      ),
+      (match) => '${match.group(1)}<redacted>',
+    );
   }
 
   static Future<void> _removeExpiredLogs(Directory directory) async {

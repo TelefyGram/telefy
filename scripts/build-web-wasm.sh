@@ -51,6 +51,13 @@ if [ "$FORCE" = "1" ] || [ ! -f "$OUTPUT_ROOT/tdweb.js" ]; then
       print "    publicPath: '\''/tdweb/'\'',"
       next
     }
+    /optimization:\{/ {
+      print "  devtool: false,"
+    }
+    /minimize:[[:space:]]*false/ {
+      sub(/minimize:[[:space:]]*false/, "minimize: true")
+      sub(/[[:space:]]*\/\/.*$/, "")
+    }
     { print }
   ' "$TDWEB_ROOT/webpack.config.js" > "$TDWEB_BUILD/webpack.config.js"
   cd "$TDWEB_BUILD"

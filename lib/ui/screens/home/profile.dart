@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../../../tdlib/client.dart';
+import '../../../translations/translation.dart';
 import '../../widgets/dialog.dart';
 import '../../widgets/loading.dart';
 import '../auth/hello_screen.dart';
@@ -42,16 +43,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
     var confirmed = false;
     await TelefyDialog.show(
       context,
-      title: 'Выйти из аккаунта?',
-      message: 'Сохранённая сессия будет завершена на этом устройстве.',
+      title: tr('profile.logoutTitle'),
+      message: tr('profile.logoutMessage'),
       actions: [
         TelefyDialogAction(
-          label: 'Отмена',
+          label: tr('profile.cancel'),
           onPressed: () {},
           shortcut: const SingleActivator(LogicalKeyboardKey.escape),
         ),
         TelefyDialogAction(
-          label: 'Выйти',
+          label: tr('profile.logout'),
           onPressed: () => confirmed = true,
           shortcut: const SingleActivator(LogicalKeyboardKey.enter),
         ),
@@ -75,12 +76,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
     } on Object catch (error) {
       if (!mounted) return;
       setState(() => _isLoggingOut = false);
-      debugPrint('Не удалось выйти из аккаунта: $error');
+      debugPrint('Logout failed: $error');
       await TelefyDialog.show(
         context,
-        title: 'Не удалось выйти',
-        message: 'Попробуйте ещё раз.',
-        actions: [TelefyDialogAction(label: 'Понятно', onPressed: () {})],
+        title: tr('profile.logoutFailed'),
+        message: tr('profile.tryAgain'),
+        actions: [
+          TelefyDialogAction(label: tr('auth.understood'), onPressed: () {}),
+        ],
       );
     }
   }
@@ -95,14 +98,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
       account.firstName,
       account.lastName,
     ].map(_value).whereType<String>().toList();
-    return parts.isEmpty ? 'Профиль' : parts.join(' ');
+    return parts.isEmpty ? tr('profile.title') : parts.join(' ');
   }
 
   List<_ProfileRow> _rows(TelegramUserInfo account) {
     return [
       if (_value(account.firstName) != null || _value(account.lastName) != null)
         _ProfileRow(
-          label: 'Имя',
+          label: tr('profile.name'),
           value: [
             account.firstName,
             account.lastName,
@@ -111,7 +114,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       if (_value(account.username) != null)
         _ProfileRow(label: 'Username', value: '@${account.username}'),
       if (_value(account.phoneNumber) != null)
-        _ProfileRow(label: 'Телефон', value: account.phoneNumber!),
+        _ProfileRow(label: tr('profile.phone'), value: account.phoneNumber!),
       if (account.id != null)
         _ProfileRow(label: 'ID', value: account.id.toString()),
     ];
@@ -123,16 +126,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
-        title: const Text('Профиль'),
+        title: Text(tr('profile.title')),
         centerTitle: true,
         actions: [
           IconButton(
-            tooltip: 'Обновить',
+            tooltip: tr('profile.refresh'),
             onPressed: _reload,
             icon: const Icon(Icons.refresh_rounded),
           ),
           IconButton(
-            tooltip: 'Выйти из аккаунта',
+            tooltip: tr('profile.logoutTooltip'),
             onPressed: _isLoggingOut ? null : _logout,
             icon: const Icon(Icons.logout_rounded),
           ),
@@ -159,7 +162,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       if (snapshot.hasError) {
                         return _ProfileError(
                           onRetry: _reload,
-                          message: 'Не удалось загрузить данные аккаунта.',
+                          message: tr('profile.accountLoadFailed'),
                         );
                       }
 
@@ -167,7 +170,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       if (account == null) {
                         return _ProfileError(
                           onRetry: _reload,
-                          message: 'Данные аккаунта недоступны.',
+                          message: tr('profile.accountUnavailable'),
                         );
                       }
 
@@ -197,7 +200,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           ),
                           const SizedBox(height: 28),
                           if (rows.isEmpty)
-                            const Text('Данные аккаунта недоступны.')
+                            Text(tr('profile.accountUnavailable'))
                           else
                             ...rows.map(
                               (row) => _ProfileInfoTile(
@@ -279,7 +282,7 @@ class _ProfileError extends StatelessWidget {
       children: [
         Text(message, textAlign: TextAlign.center),
         const SizedBox(height: 16),
-        TextButton(onPressed: onRetry, child: const Text('Повторить')),
+        TextButton(onPressed: onRetry, child: Text(tr('profile.retry'))),
       ],
     );
   }

@@ -156,7 +156,7 @@ class _AuthGateState extends State<_AuthGate> {
         }
 
         if (snapshot.hasError) {
-          debugPrint('TDLib не инициализирована: ${snapshot.error}');
+          debugPrint('TDLib initialization failed: ${snapshot.error}');
         }
 
         return client.authorizationStateType == 'authorizationStateReady'

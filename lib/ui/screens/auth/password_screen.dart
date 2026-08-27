@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:lottie/lottie.dart';
 
 import '../../../tdlib/client.dart';
+import '../../../translations/translation.dart';
 import '../../widgets/dialog.dart';
 import '../../widgets/loading.dart';
 import '../home/profile.dart';
@@ -86,7 +87,7 @@ class _PasswordScreenState extends State<PasswordScreen>
       );
     } on Object catch (error) {
       if (!mounted) return;
-      debugPrint('Не удалось проверить пароль: $error');
+      debugPrint('Password verification failed: $error');
       setState(() {
         _isVerifying = false;
         _hasError = true;
@@ -96,9 +97,11 @@ class _PasswordScreenState extends State<PasswordScreen>
       _passwordController.clear();
       await TelefyDialog.show(
         context,
-        title: 'Неверный пароль',
-        message: 'Проверьте пароль и попробуйте ещё раз.',
-        actions: [TelefyDialogAction(label: 'Понятно', onPressed: () {})],
+        title: tr('auth.wrongPassword'),
+        message: tr('auth.wrongPasswordMessage'),
+        actions: [
+          TelefyDialogAction(label: tr('auth.understood'), onPressed: () {}),
+        ],
       );
     }
   }
@@ -164,7 +167,7 @@ class _PasswordScreenState extends State<PasswordScreen>
                           ),
                           const SizedBox(height: 20),
                           Text(
-                            'Введите пароль',
+                            tr('auth.passwordTitle'),
                             textAlign: TextAlign.center,
                             style: TextStyle(
                               fontSize: titleSize,
@@ -173,7 +176,7 @@ class _PasswordScreenState extends State<PasswordScreen>
                           ),
                           const SizedBox(height: 12),
                           Text(
-                            'Введите пароль двухэтапной аутентификации',
+                            tr('auth.passwordDescription'),
                             textAlign: TextAlign.center,
                             style: TextStyle(
                               fontSize: descriptionSize,
@@ -190,12 +193,14 @@ class _PasswordScreenState extends State<PasswordScreen>
                             textInputAction: TextInputAction.done,
                             onSubmitted: (_) => _continue(),
                             decoration: InputDecoration(
-                              hintText: 'Пароль',
-                              errorText: _hasError ? 'Неверный пароль' : null,
+                              hintText: tr('auth.passwordHint'),
+                              errorText: _hasError
+                                  ? tr('auth.wrongPassword')
+                                  : null,
                               suffixIcon: IconButton(
                                 tooltip: _obscurePassword
-                                    ? 'Показать пароль'
-                                    : 'Скрыть пароль',
+                                    ? tr('auth.showPassword')
+                                    : tr('auth.hidePassword'),
                                 icon: Icon(
                                   _obscurePassword
                                       ? Icons.visibility_rounded
@@ -239,7 +244,7 @@ class _PasswordScreenState extends State<PasswordScreen>
                                   : null,
                               child: _isVerifying
                                   ? const Loading(size: 20, color: Colors.white)
-                                  : const Text('Продолжить'),
+                                  : Text(tr('auth.continue')),
                             ),
                           ),
                         ],

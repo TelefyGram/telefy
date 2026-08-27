@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:lottie/lottie.dart';
 
 import '../../../tdlib/client.dart';
+import '../../../translations/translation.dart';
 import '../../widgets/dialog.dart';
 import '../../widgets/loading.dart';
 import 'internal/auth.dart';
@@ -113,16 +114,16 @@ class _PhoneNumberScreenState extends State<PhoneNumberScreen> {
     var confirmed = false;
     await TelefyDialog.show(
       context,
-      title: 'Ваш номер',
+      title: tr('auth.confirmPhoneTitle'),
       message: fullPhoneNumber,
       actions: [
         TelefyDialogAction(
-          label: 'Изменить',
+          label: tr('auth.edit'),
           onPressed: () {},
           shortcut: const SingleActivator(LogicalKeyboardKey.escape),
         ),
         TelefyDialogAction(
-          label: 'Да',
+          label: tr('auth.yes'),
           onPressed: () => confirmed = true,
           shortcut: const SingleActivator(LogicalKeyboardKey.enter),
         ),
@@ -150,7 +151,7 @@ class _PhoneNumberScreenState extends State<PhoneNumberScreen> {
         ),
       );
     } on Object catch (error) {
-      debugPrint('Не удалось запросить код: $error');
+      debugPrint('Authentication code request failed: $error');
       if (mounted) {
         final message = error.toString().replaceFirst('Bad state: ', '');
         final isFloodWait =
@@ -159,12 +160,14 @@ class _PhoneNumberScreenState extends State<PhoneNumberScreen> {
         await TelefyDialog.show(
           context,
           title: isFloodWait
-              ? 'Код пока недоступен'
-              : 'Не удалось получить код',
+              ? tr('auth.codeUnavailable')
+              : tr('auth.codeRequestFailed'),
           message: isFloodWait
-              ? 'Telegram временно ограничил запросы. Попробуйте снова позже.'
-              : 'Проверьте номер телефона и попробуйте ещё раз.',
-          actions: [TelefyDialogAction(label: 'Понятно', onPressed: () {})],
+              ? tr('auth.telegramRateLimit')
+              : tr('auth.checkPhone'),
+          actions: [
+            TelefyDialogAction(label: tr('auth.understood'), onPressed: () {}),
+          ],
         );
       }
     } finally {
@@ -251,7 +254,7 @@ class _PhoneNumberScreenState extends State<PhoneNumberScreen> {
                         ),
 
                         Text(
-                          'Введите номер телефона',
+                          tr('auth.phoneTitle'),
                           textAlign: TextAlign.center,
                           style: TextStyle(
                             fontSize: titleSize,
@@ -265,7 +268,7 @@ class _PhoneNumberScreenState extends State<PhoneNumberScreen> {
                         ConstrainedBox(
                           constraints: const BoxConstraints(maxWidth: 420),
                           child: Text(
-                            'Мы отправим код подтверждения на ваш номер телефона',
+                            tr('auth.phoneDescription'),
                             textAlign: TextAlign.center,
                             style: TextStyle(
                               fontSize: descriptionSize,
@@ -368,8 +371,8 @@ class _PhoneNumberScreenState extends State<PhoneNumberScreen> {
                                         RegExp(r'[0-9\s\-\(\)]'),
                                       ),
                                     ],
-                                    decoration: const InputDecoration(
-                                      hintText: 'Номер телефона',
+                                    decoration: InputDecoration(
+                                      hintText: tr('auth.phoneHint'),
                                       border: InputBorder.none,
                                       contentPadding: EdgeInsets.symmetric(
                                         horizontal: 12,
@@ -395,7 +398,7 @@ class _PhoneNumberScreenState extends State<PhoneNumberScreen> {
                             onPressed: _canContinue && !_isRequestingCode
                                 ? _continue
                                 : null,
-                            child: const Text('Продолжить'),
+                            child: Text(tr('auth.continue')),
                           ),
                         ),
 
@@ -522,8 +525,8 @@ class _CountrySelectorSheetState extends State<_CountrySelectorSheet> {
 
               const SizedBox(height: 18),
 
-              const Text(
-                'Выберите страну',
+              Text(
+                tr('countries.select'),
                 style: TextStyle(fontSize: 20, fontWeight: FontWeight.w700),
               ),
 
@@ -535,7 +538,7 @@ class _CountrySelectorSheetState extends State<_CountrySelectorSheet> {
                   controller: _searchController,
                   autofocus: true,
                   decoration: InputDecoration(
-                    hintText: 'Поиск страны',
+                    hintText: tr('countries.search'),
                     prefixIcon: const Icon(Icons.search_rounded),
                     filled: true,
                     fillColor: Colors.grey.shade100,
@@ -562,10 +565,10 @@ class _CountrySelectorSheetState extends State<_CountrySelectorSheet> {
                       : const SizedBox.shrink(),
                   itemBuilder: (context, index) {
                     if (_searchController.text.trim().isEmpty && index == 0) {
-                      return const _SectionTitle('Рекомендуемые страны');
+                      return _SectionTitle(tr('countries.recommended'));
                     }
                     if (_searchController.text.trim().isEmpty && index == 10) {
-                      return const _SectionTitle('Все страны');
+                      return _SectionTitle(tr('countries.all'));
                     }
 
                     final itemIndex = _searchController.text.trim().isEmpty
@@ -639,8 +642,6 @@ class _CountrySelectorSheetState extends State<_CountrySelectorSheet> {
 }
 
 class _PhoneCountryItem {
-  static final _russianLocalizations = CountryLocalizations(const Locale('ru'));
-
   final Country? country;
   final bool isAnonymous;
 
@@ -658,13 +659,16 @@ class _PhoneCountryItem {
       isAnonymous ? AnonymousNumber.phoneCode : country!.phoneCode;
 
   String get name => isAnonymous
-      ? 'Анонимные номера'
-      : _russianLocalizations.countryName(countryCode: country!.countryCode) ??
+      ? tr('countries.anonymous')
+      : CountryLocalizations(Locale(Translations.languageCode))
+                .countryName(countryCode: country!.countryCode) ??
             country!.name;
 
   bool matches(String query) {
     if (isAnonymous) {
-      return 'анонимные номера anonymous 888 +888'.contains(query);
+      return '${tr('countries.anonymous')} anonymous 888 +888'
+          .toLowerCase()
+          .contains(query);
     }
     final value = country!;
     return name.toLowerCase().contains(query) ||

@@ -11,6 +11,7 @@ MACOS_TELEFY_BUILD := $(BUILD_ROOT)/macos/telefy
 MACOS_OPENSSL_LIB_DIR := $(shell brew --prefix openssl@3 2>/dev/null)/lib
 ANDROID_JNI_DIR := $(ROOT)/android/app/src/main/jniLibs
 DIST := $(ROOT)/dist
+WEB_TDWEB_ROOT := $(ROOT)/web/tdweb
 TDWEB_ROOT := $(TDLIB)/example/web
 
 include config/dependencies.env
@@ -53,7 +54,7 @@ ANDROID_NDK_ROOT ?= $(DISCOVERED_ANDROID_NDK_ROOT)
 
 OPENSSL_CACHE_ROOT := $(shell bash -lc 'source "$(ROOT)/scripts/deps.sh" >/dev/null 2>&1; telefy_detect_environment; printf "%s" "$$OPENSSL_CACHE_DIR/$$ANDROID_NDK_VERSION"')
 
-.PHONY: all setup doctor app build-web build-web-wasm run run-web run-web-debug run-android split-apk bundle native package-native clean clean-deps clean-all rebuild rebuild-native build-info
+.PHONY: all setup doctor app build-web build-web-wasm run run-web run-web-debug run-android split-apk bundle native package-native clean clean-web clean-deps clean-all rebuild rebuild-native build-info
 
 all:
 	@echo "make setup"
@@ -64,6 +65,7 @@ all:
 	@echo "make build-web-wasm"
 	@echo "make run PLATFORM=web PORT=8080"
 	@echo "make run-web-debug PORT=8080"
+	@echo "make clean-web"
 	@echo "make run PLATFORM=android DEVICE_ID=<device-id>"
 	@echo "make run PLATFORM=macos"
 	@echo "make run PLATFORM=windows"
@@ -258,9 +260,16 @@ endif
 build-web:
 	@test -f .env || (echo ".env is missing; create it with: cp .env.example .env"; exit 1)
 	@$(FLUTTER) pub get
+	@if [ "$(BUILD_MODE)" = "release" ]; then rm -f "$(BUILD_ROOT)/web"/*.map; fi
 	@$(FLUTTER) build web --$(BUILD_MODE) \
+		$(if $(filter release,$(BUILD_MODE)),--optimization-level=4 --no-source-maps --strip-wasm,) \
 		--dart-define=TELEGRAM_API_ID=$$(grep -E '^TELEGRAM_API_ID=' .env | cut -d= -f2-) \
 		--dart-define=TELEGRAM_API_HASH=$$(grep -E '^TELEGRAM_API_HASH=' .env | cut -d= -f2-)
+	@if [ "$(BUILD_MODE)" = "release" ]; then \
+		find "$(BUILD_ROOT)/web" -type f -name '*.map' -delete; \
+		find "$(BUILD_ROOT)/web" -type f -name '*.js' -exec sed -i.bak '/sourceMappingURL/d' {} +; \
+		find "$(BUILD_ROOT)/web" -type f -name '*.bak' -delete; \
+	fi
 
 build-web-wasm:
 	@FORCE_WEB_WASM_BUILD=$(FORCE_WEB_WASM_BUILD) ./scripts/build-web-wasm.sh
@@ -289,7 +298,8 @@ run:
 
 run-web:
 	$(MAKE) build-web-wasm
-	$(MAKE) run PLATFORM=web BUILD_MODE=release PORT=$(PORT)
+	$(MAKE) build-web BUILD_MODE=release
+	cd build/web && python3 -m http.server $(PORT)
 
 run-web-debug:
 	$(MAKE) build-web-wasm
@@ -355,10 +365,13 @@ clean:
 	@rm -rf "$(ANDROID_JNI_DIR)"
 	@find "$(BUILD_ROOT)" -type d \( -name '*\,*' \) -prune -exec rm -rf {} + 2>/dev/null || true
 
+clean-web:
+	@rm -rf "$(BUILD_ROOT)/web" "$(BUILD_ROOT)/tdweb-build" "$(WEB_TDWEB_ROOT)"
+
 clean-deps:
 	@rm -rf "$(BUILD_ROOT)/deps"
 
-clean-all: clean clean-deps
+clean-all: clean clean-web clean-deps
 
 rebuild-native:
 	@rm -rf "$(TDLIB_BUILD)" "$(TELEFY_BUILD)"

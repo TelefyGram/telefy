@@ -6,21 +6,16 @@ class ChatsScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('telefy'),
-      ),
+      appBar: AppBar(title: const Text('telefy')),
       body: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Text(
-              'Мои чаты',
-              style: TextStyle(fontSize: 24),
-            ),
+            const Text('Мои чаты', style: TextStyle(fontSize: 24)),
             const SizedBox(height: 20),
             ElevatedButton(
               onPressed: () {
-                debugPrint('Нажали!');
+                debugPrint('Button pressed');
               },
               child: const Text('Нажми меня'),
             ),

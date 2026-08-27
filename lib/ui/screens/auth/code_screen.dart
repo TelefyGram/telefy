@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:lottie/lottie.dart';
 
 import '../../../tdlib/client.dart';
+import '../../../translations/translation.dart';
 import '../../widgets/dialog.dart';
 import '../../widgets/loading.dart';
 import '../home/profile.dart';
@@ -119,7 +120,9 @@ class _CodeScreenState extends State<CodeScreen>
         context,
         title: message.$1,
         message: message.$2,
-        actions: [TelefyDialogAction(label: 'Понятно', onPressed: () {})],
+        actions: [
+          TelefyDialogAction(label: tr('auth.understood'), onPressed: () {}),
+        ],
       );
       await Future<void>.delayed(const Duration(milliseconds: 400));
       if (mounted && _codeController.text.isEmpty) {
@@ -131,23 +134,23 @@ class _CodeScreenState extends State<CodeScreen>
   (String, String) _codeErrorMessage(Object error) {
     final message = error.toString().toLowerCase();
     if (message.contains('password')) {
-      return ('Требуется пароль', 'Для этого аккаунта требуется пароль 2FA.');
-    }
-    if (message.contains('network') || message.contains('connection')) {
       return (
-        'Не удалось проверить код',
-        'Проверьте подключение к интернету и попробуйте снова.',
+        tr('auth.passwordRequiredTitle'),
+        tr('auth.passwordRequiredMessage'),
       );
     }
+    if (message.contains('network') || message.contains('connection')) {
+      return (tr('auth.codeErrorTitle'), tr('auth.networkError'));
+    }
     if (message.contains('expired')) {
-      return ('Код истёк', 'Запросите новый код и попробуйте снова.');
+      return (tr('auth.expiredCode'), tr('auth.expiredCodeMessage'));
     }
     if (message.contains('flood') ||
         message.contains('too many') ||
         message.contains('429')) {
-      return ('Слишком много попыток', 'Попробуйте снова позже.');
+      return (tr('auth.tooManyAttempts'), tr('auth.tryLater'));
     }
-    return ('Неверный код', 'Проверьте код из Telegram и попробуйте ещё раз.');
+    return (tr('auth.wrongCode'), tr('auth.wrongCodeMessage'));
   }
 
   void _submit() => _verifyCode(_codeController.text.replaceAll(' ', ''));
@@ -191,8 +194,8 @@ class _CodeScreenState extends State<CodeScreen>
                           ),
                         ),
                         const SizedBox(height: 20),
-                        const Text(
-                          'Введите код',
+                        Text(
+                          tr('auth.codeTitle'),
                           textAlign: TextAlign.center,
                           style: TextStyle(
                             fontSize: 30,
@@ -201,7 +204,7 @@ class _CodeScreenState extends State<CodeScreen>
                         ),
                         const SizedBox(height: 10),
                         Text(
-                          'Мы отправили код подтверждения на номер',
+                          tr('auth.codeDescription'),
                           textAlign: TextAlign.center,
                           style: TextStyle(
                             fontSize: 16,
@@ -246,7 +249,7 @@ class _CodeScreenState extends State<CodeScreen>
                                     !_isVerifying
                                 ? _submit
                                 : null,
-                            child: const Text('Продолжить'),
+                            child: Text(tr('auth.continue')),
                           ),
                         ),
                       ],

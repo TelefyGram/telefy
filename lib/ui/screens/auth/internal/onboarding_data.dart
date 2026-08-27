@@ -16,32 +16,32 @@ class OnboardingPage {
 const onboardingPages = <OnboardingPage>[
   OnboardingPage(
     asset: 'assets/animations/hello.tgs',
-    title: 'Привет!',
-    description: 'Добро пожаловать в Telefy',
+    title: 'auth.hellotitle',
+    description: 'auth.hellomsg',
   ),
   OnboardingPage(
     asset: 'assets/animations/source.tgs',
-    title: 'Telefy',
-    description: 'Открытый. Безопасный. Стабильный.',
+    title: 'onboarding.sourceTitle',
+    description: 'onboarding.sourceDescription',
   ),
   OnboardingPage(
     asset: 'assets/animations/platform.tgs',
-    title: 'Кроссплатформенность',
-    description: 'Пользуйся Telefy на любом устройстве\nwindows, macos, linux, ios, android',
+    title: 'onboarding.platformTitle',
+    description: 'onboarding.platformDescription',
   ),
   OnboardingPage(
     asset: 'assets/animations/communicate.tgs',
-    title: 'Общайся с удобством',
-    description: 'Общайся с пользователями из других мессенджеров',
+    title: 'onboarding.communicateTitle',
+    description: 'onboarding.communicateDescription',
   ),
   OnboardingPage(
     asset: 'assets/animations/agitation.tgs',
-    title: 'Находи аудиторию',
-    description: 'Публикуй посты в общей ленте и развивай свой канал',
+    title: 'onboarding.audienceTitle',
+    description: 'onboarding.audienceDescription',
   ),
   OnboardingPage(
     asset: 'assets/animations/music.tgs',
-    title: 'Музыка',
-    description: 'Добавляй музыку и слушай то, что добавляют другие',
+    title: 'onboarding.musicTitle',
+    description: 'onboarding.musicDescription',
   ),
 ];
