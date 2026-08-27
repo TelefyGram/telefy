@@ -54,7 +54,7 @@ ANDROID_NDK_ROOT ?= $(DISCOVERED_ANDROID_NDK_ROOT)
 
 OPENSSL_CACHE_ROOT := $(shell bash -lc 'source "$(ROOT)/scripts/deps.sh" >/dev/null 2>&1; telefy_detect_environment; printf "%s" "$$OPENSSL_CACHE_DIR/$$ANDROID_NDK_VERSION"')
 
-.PHONY: all setup doctor app build-web build-web-wasm run run-web run-web-debug run-android split-apk bundle native package-native clean clean-web clean-deps clean-all rebuild rebuild-native build-info
+.PHONY: all setup doctor app build-web build-web-wasm run run-web run-web-debug web-upd run-android split-apk bundle native package-native clean clean-web clean-deps clean-all rebuild rebuild-native build-info
 
 all:
 	@echo "make setup"
@@ -65,6 +65,7 @@ all:
 	@echo "make build-web-wasm"
 	@echo "make run PLATFORM=web PORT=8080"
 	@echo "make run-web-debug PORT=8080"
+	@echo "make web-upd"
 	@echo "make clean-web"
 	@echo "make run PLATFORM=android DEVICE_ID=<device-id>"
 	@echo "make run PLATFORM=macos"
@@ -297,9 +298,11 @@ run:
 	fi
 
 run-web:
-	$(MAKE) build-web-wasm
-	$(MAKE) build-web BUILD_MODE=release
-	cd build/web && python3 -m http.server $(PORT)
+	$(MAKE) web-upd
+	python3 -m http.server $(PORT) --directory build/web-current
+
+web-upd:
+	@bash ./scripts/web-upd.sh
 
 run-web-debug:
 	$(MAKE) build-web-wasm
@@ -366,7 +369,7 @@ clean:
 	@find "$(BUILD_ROOT)" -type d \( -name '*\,*' \) -prune -exec rm -rf {} + 2>/dev/null || true
 
 clean-web:
-	@rm -rf "$(BUILD_ROOT)/web" "$(BUILD_ROOT)/tdweb-build" "$(WEB_TDWEB_ROOT)"
+	@rm -rf "$(BUILD_ROOT)/web" "$(BUILD_ROOT)/web-current" "$(BUILD_ROOT)/web-releases" "$(BUILD_ROOT)/tdweb-build" "$(WEB_TDWEB_ROOT)"
 
 clean-deps:
 	@rm -rf "$(BUILD_ROOT)/deps"

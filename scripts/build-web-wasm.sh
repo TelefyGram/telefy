@@ -6,7 +6,7 @@ WEB_ROOT="$ROOT/tdlib/example/web"
 TDWEB_ROOT="$WEB_ROOT/tdweb"
 TDWEB_BUILD="$ROOT/build/tdweb-build"
 WASM_ROOT="$WEB_ROOT/build/wasm"
-OUTPUT_ROOT="$ROOT/web/tdweb"
+OUTPUT_ROOT="${WEB_TDWEB_OUTPUT_ROOT:-$ROOT/web/tdweb}"
 FORCE=${FORCE_WEB_WASM_BUILD:-0}
 
 if [ ! -f "$WASM_ROOT/td_wasm.js" ] || [ ! -f "$WASM_ROOT/td_wasm.wasm" ]; then

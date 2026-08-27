@@ -3,7 +3,7 @@
     "short_name": "telefy",
     "start_url": ".",
     "display": "standalone",
-    "background_color": "#FFFFFF",
+    "background_color": "#FFFF00",
     "theme_color": "#17D9E6",
     "description": "A new Flutter project.",
     "orientation": "portrait-primary",

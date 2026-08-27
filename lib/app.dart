@@ -3,6 +3,7 @@ import 'package:lottie/lottie.dart';
 
 import 'platform/platform_info.dart';
 import 'tdlib/client.dart';
+import 'translations/translation.dart';
 import 'ui/screens/auth/hello_screen.dart';
 import 'ui/screens/profile/profile.dart';
 
@@ -17,9 +18,20 @@ class TelefyApp extends StatefulWidget {
 
 class _TelefyAppState extends State<TelefyApp> {
   @override
+  void initState() {
+    super.initState();
+    Translations.addListener(_onTranslationsChanged);
+  }
+
+  @override
   void dispose() {
+    Translations.removeListener(_onTranslationsChanged);
     widget.client.dispose();
     super.dispose();
+  }
+
+  void _onTranslationsChanged() {
+    if (mounted) setState(() {});
   }
 
   @override

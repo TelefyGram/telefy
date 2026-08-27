@@ -7,7 +7,9 @@ import 'translations/translation.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await Translations.loadFallbacks();
   await Translations.setLanguage('en');
+  Translations.startAutoReload();
 
   AppLogger.initialize().then<void>(
     (_) {},
