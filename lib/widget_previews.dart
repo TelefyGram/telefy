@@ -5,6 +5,9 @@ import 'package:flutter/widget_previews.dart';
 import 'ui/widgets/animation.dart';
 import 'ui/widgets/dialog.dart';
 import 'ui/widgets/loading.dart';
+import 'tdlib/telegram_api.dart';
+import 'translations/translation.dart';
+import 'internal/ui/app_theme.dart';
 
 @Preview(name: 'Loading', group: 'Telefy widgets', size: Size(160, 120))
 Widget loadingPreview() {
@@ -23,30 +26,30 @@ Widget duckCommunicateAnimationPreview() {
 @Preview(name: 'Dialog', group: 'Telefy widgets', size: Size(480, 320))
 Widget dialogPreview() {
   return MaterialApp(
-    theme: ThemeData(useMaterial3: true),
+    theme: buildTelefyTheme(),
     home: Scaffold(
       body: Center(
         child: FilledButton(
           onPressed: () {
             TelefyDialog.show(
               navigatorKey.currentContext!,
-              title: 'Удалить черновик?',
-              message: 'Это действие нельзя отменить.',
+              title: tr('preview.dialogTitle'),
+              message: tr('preview.dialogMessage'),
               actions: [
                 TelefyDialogAction(
-                  label: 'Отмена',
+                  label: tr('preview.cancel'),
                   onPressed: () {},
                   shortcut: const SingleActivator(LogicalKeyboardKey.escape),
                 ),
                 TelefyDialogAction(
-                  label: 'Удалить',
+                  label: tr('preview.delete'),
                   onPressed: () {},
                   shortcut: const SingleActivator(LogicalKeyboardKey.enter),
                 ),
               ],
             );
           },
-          child: const Text('Открыть диалог'),
+          child: Text(tr('preview.openDialog')),
         ),
       ),
     ),

@@ -5,11 +5,13 @@ import 'logging/app_logger_platform.dart';
 import 'network/ping_service.dart';
 import 'tdlib/client.dart';
 import 'translations/translation.dart';
+import 'internal/ui/theme_controller.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Translations.loadFallbacks();
   await Translations.setLanguage('en');
+  await ThemeController.load();
   Translations.startAutoReload();
   PingService.start(
     url: const String.fromEnvironment(

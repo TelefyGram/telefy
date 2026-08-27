@@ -41,7 +41,7 @@ class TelefyDialog {
     return showGeneralDialog<void>(
       context: context,
       barrierDismissible: false,
-      barrierLabel: 'Диалоговое окно',
+      barrierLabel: tr('common.dialog'),
       barrierColor: Colors.black26,
       transitionDuration: const Duration(milliseconds: 180),
       pageBuilder: (context, animation, secondaryAnimation) {

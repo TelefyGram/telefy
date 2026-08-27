@@ -1,0 +1,34 @@
+{
+  "name": "telegram_liquid_glass",
+  "seedColor": "#4B9ED8",
+  "brightness": "light",
+  "useMaterial3": true,
+  "radius": 24,
+  "surfaceOpacity": 0.78,
+  "colors": {
+    "brand": "#4B9ED8",
+    "primary": "#287DBA",
+    "background": "#E7F3FA",
+    "panel": "#FFFFFF",
+    "input": "#FFFFFF",
+    "danger": "#C43D54",
+    "profileAccent": "#287DBA",
+    "chatIncoming": "#FFFFFF",
+    "chatOutgoing": "#D7F5E5",
+    "primaryText": "#17324D",
+    "secondaryText": "#557087",
+    "outline": "#B9D4E4"
+  },
+  "elements": {
+    "card": {"radius": 22},
+    "surface": {"opacity": 0.78},
+    "profile": {"avatarRadius": 56},
+    "input": {"radius": 20},
+    "list": {"radius": 18},
+    "button": {"radius": 24, "height": 56}
+  },
+  "typography": {
+    "body": {"size": 16, "weight": 450},
+    "title": {"size": 24, "weight": 750}
+  }
+}

@@ -39,6 +39,8 @@ dependencies:
   lottie: ^3.5.1
   country_picker: ^2.0.27
   share_plus: ^13.3.0
+  sensors_plus: ^7.1.0
+  shared_preferences: ^2.5.3
 
 dev_dependencies:
   flutter_test:
@@ -89,6 +91,7 @@ flutter:
     - assets/animations/
     - assets/icons/
     - assets/translations/
+    - assets/themes/
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images

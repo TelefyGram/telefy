@@ -1,0 +1,34 @@
+{
+  "name": "telegram_classic",
+  "seedColor": "#3390EC",
+  "brightness": "light",
+  "useMaterial3": true,
+  "radius": 18,
+  "surfaceOpacity": 1,
+  "colors": {
+    "brand": "#3390EC",
+    "primary": "#3390EC",
+    "background": "#FFFFFF",
+    "panel": "#F2F2F7",
+    "input": "#EEF0F3",
+    "danger": "#D93025",
+    "profileAccent": "#3390EC",
+    "chatIncoming": "#FFFFFF",
+    "chatOutgoing": "#E1FFC7",
+    "primaryText": "#17212B",
+    "secondaryText": "#708090",
+    "outline": "#D8DEE6"
+  },
+  "elements": {
+    "card": {"radius": 12},
+    "surface": {"opacity": 1},
+    "profile": {"avatarRadius": 48},
+    "input": {"radius": 14},
+    "list": {"radius": 12},
+    "button": {"radius": 16, "height": 52}
+  },
+  "typography": {
+    "body": {"size": 16, "weight": 400},
+    "title": {"size": 22, "weight": 700}
+  }
+}

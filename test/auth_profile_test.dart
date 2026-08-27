@@ -184,6 +184,11 @@ class FakeTelegramClient implements TelegramClientApi {
   }
 
   @override
+  Future<List<TelegramMessageInfo>> getChatMessages(int chatId) async {
+    return const [];
+  }
+
+  @override
   Future<void> logOut() async {
     didLogOut = true;
   }

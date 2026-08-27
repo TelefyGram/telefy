@@ -1,4 +1,14 @@
 {
+    "app": {
+        "title": "Telefy"
+    },
+    "common": {
+        "dialog": "Dialog"
+    },
+    "chats": {
+        "title": "My chats",
+        "action": "Press me"
+    },
     "language": {
         "name": "English",
         "short": "EN"
@@ -70,8 +80,32 @@
         "title": "Profile",
         "refresh": "Refresh",
         "logoutTooltip": "Log out",
+        "settings": "Settings",
+        "hiddenSettings": "Hidden settings",
+        "hiddenSettingsDescription": "Application service options",
+        "hiddenSettingsOpen": "Open settings",
+        "online": "online",
+        "copied": "Copied",
         "name": "Name",
         "phone": "Phone",
+        "peerId": "Peer ID",
+        "about": "About",
+        "aboutEmpty": "Not specified",
+        "workHours": "Working hours",
+        "workHoursEmpty": "Not specified",
+        "publications": "Publications",
+        "noPublications": "No publications yet",
+        "channel": "Channel",
+        "channelOpen": "Open channel messages",
+        "channelLoadFailed": "Could not load channel messages",
+        "channelEmpty": "The channel has no messages yet",
+        "status": "Status",
+        "premium": "Telegram Premium",
+        "emojiStatus": "Emoji status",
+        "emojiMarker": "✨",
+        "gifts": "Gifts",
+        "gift": "Gift",
+        "giftReceived": "Received in profile",
         "accountLoadFailed": "Could not load account data.",
         "accountUnavailable": "Account data is unavailable.",
         "retry": "Retry",
@@ -79,8 +113,30 @@
     },
     "settings": {
         "title": "Settings",
+        "theme": "Theme",
+        "themeDescription": "Choose the application style",
+        "language": "Language",
+        "languageDescription": "Choose the application language",
         "exportLog": "log",
         "exportLogDescription": "Export the log file",
+        "telegram_classic": "Telegram classic",
+        "telegram_liquid_glass": "Telegram Liquid Glass",
         "logUnavailable": "The log file is not available yet."
+        ,"logExported": "The log was copied and downloaded."
+    },
+    "preview": {
+        "textMessage": "Text message example",
+        "photoMessage": "Photo caption",
+        "pollQuestion": "Which message type should open?",
+        "pollOptionOne": "Photo",
+        "pollOptionTwo": "Poll",
+        "videoMessage": "Video",
+        "documentMessage": "Document",
+        "voiceMessage": "Voice message",
+        "dialogTitle": "Delete draft?",
+        "dialogMessage": "This action cannot be undone.",
+        "cancel": "Cancel",
+        "delete": "Delete",
+        "openDialog": "Open dialog"
     }
 }

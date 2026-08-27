@@ -83,6 +83,10 @@ class TelegramClient implements TelegramClientApi {
       'enable_storage_optimizer': true,
       'use_test_dc': false,
     });
+    await _send({
+      '@type': 'setNetworkType',
+      'type': {'@type': 'networkTypeOther'},
+    });
     _updateAuthorizationState(await _send({'@type': 'getAuthorizationState'}));
   }
 
@@ -107,12 +111,10 @@ class TelegramClient implements TelegramClientApi {
   Future<AuthenticationCodeResult> checkAuthenticationCode({
     required String code,
   }) async {
-    final response = await _send({
-      '@type': 'checkAuthenticationCode',
-      'code': code,
-    });
-    return response['@type'] == 'error' ||
-            _authorizationStateType == 'authorizationStateWaitPassword'
+    await _send({'@type': 'checkAuthenticationCode', 'code': code});
+    final state = await _send({'@type': 'getAuthorizationState'});
+    _updateAuthorizationState(state);
+    return _authorizationStateType == 'authorizationStateWaitPassword'
         ? AuthenticationCodeResult.passwordRequired
         : AuthenticationCodeResult.authorized;
   }
@@ -127,7 +129,70 @@ class TelegramClient implements TelegramClientApi {
 
   @override
   Future<TelegramUserInfo> getMe() async {
-    return _userFromResponse(await _send({'@type': 'getMe'}));
+    final response = await _send({'@type': 'getMe'});
+    final user = _userFromResponse(response);
+    Map<String, dynamic> full = <String, dynamic>{};
+    if (user.id != null) {
+      try {
+        full = await _send({'@type': 'getUserFullInfo', 'user_id': user.id})
+            .timeout(
+              const Duration(seconds: 3),
+              onTimeout: () => <String, dynamic>{},
+            );
+      } on Object {
+        full = <String, dynamic>{};
+      }
+    }
+    return TelegramUserInfo(
+      firstName: user.firstName,
+      lastName: user.lastName,
+      username: user.username,
+      phoneNumber: user.phoneNumber,
+      id: user.id,
+      avatarPath: user.avatarPath,
+      bio: _stringValue(full['bio'] is Map ? full['bio']['text'] : null),
+      accentColorId: user.accentColorId,
+      backgroundCustomEmojiId: user.backgroundCustomEmojiId,
+      emojiStatusId: user.emojiStatusId,
+      isPremium: user.isPremium,
+      isVerified: user.isVerified,
+      channelId: _intValue(full['community_id']),
+    );
+  }
+
+  @override
+  Future<List<TelegramMessageInfo>> getChatMessages(int chatId) async {
+    final response = await _send({
+      '@type': 'getChatHistory',
+      'chat_id': chatId,
+      'from_message_id': 0,
+      'offset': 0,
+      'limit': 100,
+      'only_local': false,
+    });
+    final messages = response['messages'];
+    if (messages is! List) return const [];
+    return messages.whereType<Map>().map(_messageFromResponse).toList();
+  }
+
+  TelegramMessageInfo _messageFromResponse(Map message) {
+    final content = message['content'];
+    final type = content is Map ? content['@type']?.toString() : null;
+    return TelegramMessageInfo(
+      id: _intValue(message['id']) ?? 0,
+      type: type == 'messagePhoto'
+          ? TelegramMessageType.photo
+          : type == 'messagePoll'
+          ? TelegramMessageType.poll
+          : TelegramMessageType.text,
+      text: content is Map
+          ? (content['text'] is Map
+                ? content['text']['text']?.toString() ?? ''
+                : content['caption'] is Map
+                ? content['caption']['text']?.toString() ?? ''
+                : '')
+          : '',
+    );
   }
 
   @override
@@ -189,11 +254,44 @@ class TelegramClient implements TelegramClientApi {
         ? Map<String, dynamic>.from(response['user'] as Map)
         : response;
     return TelegramUserInfo(
-      firstName: user['first_name'] as String?,
-      lastName: user['last_name'] as String?,
-      username: user['username'] as String?,
-      phoneNumber: user['phone_number'] as String?,
-      id: user['id'] as int?,
+      firstName: _stringValue(user['first_name']),
+      lastName: _stringValue(user['last_name']),
+      username: _stringValue(user['username']),
+      phoneNumber: _stringValue(user['phone_number']),
+      id: _intValue(user['id']),
+      avatarPath: _avatarPath(user),
+      accentColorId: _intValue(user['profile_accent_color_id']),
+      backgroundCustomEmojiId: _intValue(
+        user['profile_background_custom_emoji_id'],
+      ),
+      emojiStatusId: _emojiStatusId(user['emoji_status']),
+      isPremium: user['is_premium'] == true,
+      isVerified: user['is_verified'] == true,
     );
+  }
+
+  int? _emojiStatusId(dynamic value) {
+    if (value is! Map || value['type'] is! Map) return null;
+    return _intValue(value['type']['custom_emoji_id']);
+  }
+
+  int? _intValue(dynamic value) {
+    if (value is int) return value;
+    if (value is num) return value.toInt();
+    return int.tryParse(value?.toString() ?? '');
+  }
+
+  String? _stringValue(dynamic value) {
+    if (value == null) return null;
+    final text = value.toString().trim();
+    return text.isEmpty ? null : text;
+  }
+
+  String? _avatarPath(Map<String, dynamic> user) {
+    final photo = user['profile_photo'];
+    final small = photo is Map ? photo['small'] : null;
+    final local = small is Map ? small['local'] : null;
+    final path = local is Map ? local['path'] : null;
+    return path is String && path.isNotEmpty ? path : null;
   }
 }

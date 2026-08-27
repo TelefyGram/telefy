@@ -225,22 +225,22 @@ class _PhoneNumberScreenState extends State<PhoneNumberScreen> {
                     ),
                     child: Column(
                       children: [
-                        const Spacer(flex: 2),
+                        const SizedBox(height: 28),
 
                         SizedBox(
                           width: _responsiveSize(
-                            180,
+                            160,
                             width,
                             height,
-                            min: 64,
-                            max: 200,
+                            min: 120,
+                            max: 180,
                           ),
                           height: _responsiveSize(
-                            180,
+                            160,
                             width,
                             height,
-                            min: 64,
-                            max: 200,
+                            min: 120,
+                            max: 180,
                           ),
                           child: Lottie.asset(
                             'assets/animations/communicate.tgs',
@@ -253,11 +253,11 @@ class _PhoneNumberScreenState extends State<PhoneNumberScreen> {
 
                         SizedBox(
                           height: _responsiveSize(
-                            32,
+                            18,
                             width,
                             height,
-                            min: 20,
-                            max: 36,
+                            min: 12,
+                            max: 24,
                           ),
                         ),
 
@@ -271,7 +271,7 @@ class _PhoneNumberScreenState extends State<PhoneNumberScreen> {
                           ),
                         ),
 
-                        const SizedBox(height: 12),
+                        const SizedBox(height: 8),
 
                         ConstrainedBox(
                           constraints: const BoxConstraints(maxWidth: 420),
@@ -288,11 +288,11 @@ class _PhoneNumberScreenState extends State<PhoneNumberScreen> {
 
                         SizedBox(
                           height: _responsiveSize(
-                            36,
+                            22,
                             width,
                             height,
-                            min: 24,
-                            max: 44,
+                            min: 16,
+                            max: 28,
                           ),
                         ),
 
@@ -397,7 +397,7 @@ class _PhoneNumberScreenState extends State<PhoneNumberScreen> {
                             ),
                           ),
                         ),
-                        const Spacer(flex: 3),
+                        const Spacer(),
 
                         SizedBox(
                           width: double.infinity,
@@ -589,7 +589,7 @@ class _CountrySelectorSheetState extends State<_CountrySelectorSheet> {
                         ? widget.isAnonymousNumber
                         : !widget.isAnonymousNumber &&
                               item.country!.countryCode ==
-                                  widget.selectedCountry!.countryCode;
+                                  widget.selectedCountry?.countryCode;
 
                     return ListTile(
                       onTap: () {

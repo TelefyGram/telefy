@@ -192,13 +192,178 @@ class TelegramClient implements TelegramClientApi {
     final username = activeUsernames is List && activeUsernames.isNotEmpty
         ? activeUsernames.first as String?
         : response['username'] as String?;
+    final profilePhoto = response['profile_photo'];
+    final smallPhoto = profilePhoto is Map ? profilePhoto['small'] : null;
+    final avatarPath = await _downloadPhotoPath(smallPhoto)
+        .timeout(const Duration(seconds: 3), onTimeout: () => null);
+    final userId = _intValue(response['id']);
+    final fullInfo = userId == null
+        ? <String, dynamic>{}
+        : await _requestSafely('getUserFullInfo', {'user_id': userId}).timeout(
+            const Duration(seconds: 3),
+            onTimeout: () => <String, dynamic>{},
+          );
     return TelegramUserInfo(
       firstName: response['first_name'] as String?,
       lastName: response['last_name'] as String?,
       username: username,
       phoneNumber: response['phone_number'] as String?,
-      id: response['id'] as int?,
+      id: userId,
+      avatarPath: avatarPath,
+      bio: _formattedText(fullInfo['bio']),
+      accentColorId: _intValue(response['profile_accent_color_id']),
+      backgroundCustomEmojiId: _intValue(
+        response['profile_background_custom_emoji_id'],
+      ),
+      emojiStatusId: _emojiStatusId(response['emoji_status']),
+      isPremium: response['is_premium'] == true,
+      isVerified: response['is_verified'] == true,
+      gifts: const [],
+      channelId: _intValue(fullInfo['community_id']),
     );
+  }
+
+  @override
+  Future<List<TelegramMessageInfo>> getChatMessages(int chatId) async {
+    final response = await _requestSafely('getChatHistory', {
+      'chat_id': chatId,
+      'from_message_id': 0,
+      'offset': 0,
+      'limit': 100,
+      'only_local': false,
+    });
+    final messages = response['messages'];
+    if (messages is! List) return const [];
+    final result = <TelegramMessageInfo>[];
+    for (final value in messages.whereType<Map>()) {
+      final parsed = await _parseMessage(value);
+      if (parsed != null) result.add(parsed);
+    }
+    return result;
+  }
+
+  Future<TelegramMessageInfo?> _parseMessage(Map message) async {
+    final content = message['content'];
+    if (content is! Map) return null;
+    final type = content['@type']?.toString();
+    final text = _formattedText(content['text'] ?? content['caption']) ?? '';
+    if (type == 'messageText') {
+      return TelegramMessageInfo(
+        id: (message['id'] as int?) ?? 0,
+        type: TelegramMessageType.text,
+        text: text,
+      );
+    }
+    if (type == 'messagePhoto') {
+      final photo = content['photo'];
+      final sizes = photo is Map ? photo['sizes'] : null;
+      final paths = <String>[];
+      if (sizes is List) {
+        for (final size in sizes.whereType<Map>()) {
+          final path = await _downloadPhotoPath(size['photo']);
+          if (path != null) paths.add(path);
+        }
+      }
+      return TelegramMessageInfo(
+        id: (message['id'] as int?) ?? 0,
+        type: TelegramMessageType.photo,
+        text: text,
+        mediaPath: paths.isEmpty ? null : paths.last,
+      );
+    }
+    if (type == 'messagePoll') {
+      final poll = content['poll'];
+      final options = poll is Map && poll['options'] is List
+          ? (poll['options'] as List)
+                .whereType<Map>()
+                .map((option) => _formattedText(option['text']) ?? '')
+                .where((option) => option.isNotEmpty)
+                .toList()
+          : const <String>[];
+      return TelegramMessageInfo(
+        id: (message['id'] as int?) ?? 0,
+        type: TelegramMessageType.poll,
+        text: poll is Map ? poll['question']?.toString() ?? text : text,
+        pollOptions: options,
+      );
+    }
+    return TelegramMessageInfo(
+      id: (message['id'] as int?) ?? 0,
+      type: _messageType(type),
+      text: text,
+    );
+  }
+
+  TelegramMessageType _messageType(String? type) {
+    if (type == 'messageVideo') return TelegramMessageType.video;
+    if (type == 'messageDocument') return TelegramMessageType.document;
+    if (type == 'messageVoiceNote') return TelegramMessageType.voice;
+    return TelegramMessageType.text;
+  }
+
+  Future<Map<String, dynamic>> _requestSafely(
+    String type,
+    Map<String, dynamic> parameters,
+  ) async {
+    try {
+      return await _request(type, parameters);
+    } on Object {
+      return <String, dynamic>{};
+    }
+  }
+
+  String? _formattedText(dynamic value) {
+    if (value is Map) return value['text']?.toString();
+    return null;
+  }
+
+  int? _emojiStatusId(dynamic value) {
+    if (value is! Map) return null;
+    final type = value['type'];
+    return type is Map ? _intValue(type['custom_emoji_id']) : null;
+  }
+
+  int? _intValue(dynamic value) {
+    if (value is int) return value;
+    if (value is num) return value.toInt();
+    return int.tryParse(value?.toString() ?? '');
+  }
+
+  Future<Map<String, dynamic>> _request(
+    String type,
+    Map<String, dynamic> parameters,
+  ) async {
+    final requestId = '$type-${++_requestSequence}';
+    send({'@type': type, '@extra': requestId, ...parameters});
+    return _waitForResponse(requestId);
+  }
+
+  Future<String?> _downloadPhotoPath(dynamic photo) async {
+    if (photo is! Map || photo['id'] is! int) return null;
+    final fileId = photo['id'] as int;
+    final local = photo['local'];
+    if (local is Map && local['is_downloading_completed'] == true) {
+      final path = local['path'];
+      if (path is String && path.isNotEmpty) return path;
+    }
+
+    final requestId = 'downloadProfilePhoto-${++_requestSequence}';
+    send({
+      '@type': 'downloadFile',
+      '@extra': requestId,
+      'file_id': fileId,
+      'priority': 32,
+      'offset': 0,
+      'limit': 0,
+      'synchronous': true,
+    });
+    final downloaded = await _waitForResponse(requestId);
+    final downloadedLocal = downloaded['local'];
+    if (downloadedLocal is Map) {
+      final path = downloadedLocal['path'];
+      if (path is String && path.isNotEmpty) return path;
+    }
+    return null;
   }
 
   @override
@@ -281,6 +446,11 @@ class TelegramClient implements TelegramClientApi {
       '@type': 'setOption',
       'name': 'prefer_ipv6',
       'value': {'@type': 'optionValueBoolean', 'value': false},
+    });
+
+    send({
+      '@type': 'setNetworkType',
+      'type': {'@type': 'networkTypeOther'},
     });
 
     send({

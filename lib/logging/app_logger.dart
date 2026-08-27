@@ -56,6 +56,12 @@ class AppLogger {
 
   static File? get currentFile => _file;
 
+  static Future<bool> exportLog() async {
+    final file = _file;
+    if (file == null || !await file.exists()) return false;
+    return true;
+  }
+
   static String _redactCredentials(String message) {
     return message.replaceAllMapped(
       RegExp(

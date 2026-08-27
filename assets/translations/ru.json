@@ -1,4 +1,14 @@
 {
+    "app": {
+        "title": "Telefy"
+    },
+    "common": {
+        "dialog": "Диалоговое окно"
+    },
+    "chats": {
+        "title": "Мои чаты",
+        "action": "Нажми меня"
+    },
     "language": {
         "name": "Русский",
         "short": "RU"
@@ -70,8 +80,32 @@
         "title": "Профиль",
         "refresh": "Обновить",
         "logoutTooltip": "Выйти из аккаунта",
+        "settings": "Настройки",
+        "hiddenSettings": "Скрытые настройки",
+        "hiddenSettingsDescription": "Служебные параметры приложения",
+        "hiddenSettingsOpen": "Открыть настройки",
+        "online": "в сети",
+        "copied": "Скопировано",
         "name": "Имя",
         "phone": "Телефон",
+        "peerId": "Peer ID",
+        "about": "О себе",
+        "aboutEmpty": "Не указано",
+        "workHours": "Часы работы",
+        "workHoursEmpty": "Не указаны",
+        "publications": "Публикации",
+        "noPublications": "Публикаций пока нет",
+        "channel": "Канал",
+        "channelOpen": "Открыть сообщения канала",
+        "channelLoadFailed": "Не удалось загрузить сообщения канала",
+        "channelEmpty": "В канале пока нет сообщений",
+        "status": "Статус",
+        "premium": "Telegram Premium",
+        "emojiStatus": "Эмодзи-статус",
+        "emojiMarker": "✨",
+        "gifts": "Подарки",
+        "gift": "Подарок",
+        "giftReceived": "Получен в профиле",
         "accountLoadFailed": "Не удалось загрузить данные аккаунта.",
         "accountUnavailable": "Данные аккаунта недоступны.",
         "retry": "Повторить",
@@ -79,8 +113,30 @@
     },
     "settings": {
         "title": "Настройки",
+        "theme": "Тема",
+        "themeDescription": "Выберите оформление приложения",
+        "language": "Язык",
+        "languageDescription": "Выберите язык приложения",
         "exportLog": "лог",
         "exportLogDescription": "Експортировать файл лога",
+        "telegram_classic": "Старый Telegram",
+        "telegram_liquid_glass": "Новый Telegram: Liquid Glass",
         "logUnavailable": "Файл лога пока недоступен."
+        ,"logExported": "Лог скопирован и скачан."
+    },
+    "preview": {
+        "textMessage": "Пример текстового сообщения",
+        "photoMessage": "Подпись к фотографии",
+        "pollQuestion": "Какой тип сообщения открыть?",
+        "pollOptionOne": "Фотография",
+        "pollOptionTwo": "Опрос",
+        "videoMessage": "Видео",
+        "documentMessage": "Документ",
+        "voiceMessage": "Голосовое сообщение",
+        "dialogTitle": "Удалить черновик?",
+        "dialogMessage": "Это действие нельзя отменить.",
+        "cancel": "Отмена",
+        "delete": "Удалить",
+        "openDialog": "Открыть диалог"
     }
 }
