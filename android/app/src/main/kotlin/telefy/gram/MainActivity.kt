@@ -1,4 +1,4 @@
-package com.example.telefy
+package telefy.gram
 
 import io.flutter.embedding.android.FlutterActivity
 

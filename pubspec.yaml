@@ -38,6 +38,7 @@ dependencies:
   path_provider: ^2.1.5
   lottie: ^3.5.1
   country_picker: ^2.0.27
+  share_plus: ^13.3.0
 
 dev_dependencies:
   flutter_test:

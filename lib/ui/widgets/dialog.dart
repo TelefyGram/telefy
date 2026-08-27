@@ -1,5 +1,10 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+
+import '../../logging/log_exporter.dart';
+import '../../translations/translation.dart';
 
 class TelefyDialogAction {
   final String label;
@@ -21,7 +26,18 @@ class TelefyDialog {
     required String title,
     required String message,
     required List<TelefyDialogAction> actions,
+    bool includeLogAction = false,
   }) {
+    final dialogActions = includeLogAction
+        ? [
+            TelefyDialogAction(
+              label: tr('settings.exportLog'),
+              shortcut: const SingleActivator(LogicalKeyboardKey.keyL),
+              onPressed: () => unawaited(LogExporter.share(context)),
+            ),
+            ...actions,
+          ]
+        : actions;
     return showGeneralDialog<void>(
       context: context,
       barrierDismissible: false,
@@ -32,7 +48,7 @@ class TelefyDialog {
         return _TelefyDialogBody(
           title: title,
           message: message,
-          actions: actions,
+          actions: dialogActions,
         );
       },
       transitionBuilder: (context, animation, secondaryAnimation, child) {

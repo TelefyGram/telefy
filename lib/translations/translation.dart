@@ -33,6 +33,8 @@ class Translations {
   static String _languageCode = 'ru';
   static final List<VoidCallback> _listeners = [];
   static Timer? _reloadTimer;
+  static bool _reloadInProgress = false;
+  static bool _fallbacksLoaded = false;
 
   static const languages = <String, String>{
     'ru': 'assets/translations/ru.json',
@@ -51,15 +53,24 @@ class Translations {
     if (assetPath == null) {
       throw ArgumentError.value(languageCode, 'languageCode');
     }
-    final selected = await _loadModel(assetPath);
+    final selected = _fallbacksLoaded
+        ? languageCode == 'en'
+              ? _english
+              : _russian
+        : await _loadModel(assetPath);
     _current = selected;
     _languageCode = languageCode;
     _notifyListeners();
   }
 
   static Future<void> loadFallbacks() async {
-    _english = await _loadModel(languages['en']!);
-    _russian = await _loadModel(languages['ru']!);
+    final models = await Future.wait([
+      _loadModel(languages['en']!),
+      _loadModel(languages['ru']!),
+    ]);
+    _english = models[0];
+    _russian = models[1];
+    _fallbacksLoaded = true;
   }
 
   static void startAutoReload({
@@ -75,16 +86,23 @@ class Translations {
       _listeners.remove(listener);
 
   static Future<void> _reloadRemote() async {
+    if (_reloadInProgress) return;
+    _reloadInProgress = true;
     try {
-      final english = await _loadModel(languages['en']!);
-      final russian = await _loadModel(languages['ru']!);
-      final current = await _loadModel(languages[_languageCode]!);
+      final models = await Future.wait([
+        _loadModel(languages['en']!),
+        _loadModel(languages['ru']!),
+      ]);
+      final english = models[0];
+      final russian = models[1];
       _english = english;
       _russian = russian;
-      _current = current;
+      _current = _languageCode == 'en' ? english : russian;
       _notifyListeners();
     } on Object {
       // Keep the last valid translations when the server is unavailable.
+    } finally {
+      _reloadInProgress = false;
     }
   }
 

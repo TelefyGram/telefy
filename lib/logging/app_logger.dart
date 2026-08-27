@@ -54,6 +54,8 @@ class AppLogger {
     });
   }
 
+  static File? get currentFile => _file;
+
   static String _redactCredentials(String message) {
     return message.replaceAllMapped(
       RegExp(

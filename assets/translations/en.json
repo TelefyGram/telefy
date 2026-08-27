@@ -17,6 +17,7 @@
         "continue": "Continue",
         "codeTitle": "Enter the code",
         "codeDescription": "We sent a verification code to this number",
+        "codeDeliveryNotice": "The code is sent only in the official Telegram app",
         "passwordRequiredTitle": "Password required",
         "passwordRequiredMessage": "This account requires a two-factor authentication password.",
         "passwordTitle": "Enter password",
@@ -75,5 +76,11 @@
         "accountUnavailable": "Account data is unavailable.",
         "retry": "Retry",
         "username": "Username"
+    },
+    "settings": {
+        "title": "Settings",
+        "exportLog": "log",
+        "exportLogDescription": "Export the log file",
+        "logUnavailable": "The log file is not available yet."
     }
 }

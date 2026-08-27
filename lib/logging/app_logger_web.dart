@@ -1,6 +1,8 @@
 import 'package:flutter/foundation.dart';
 
 class AppLogger {
+  static dynamic get currentFile => null;
+
   static Future<void> initialize() async {
     FlutterError.onError = (details) {
       debugPrint(

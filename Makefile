@@ -54,7 +54,7 @@ ANDROID_NDK_ROOT ?= $(DISCOVERED_ANDROID_NDK_ROOT)
 
 OPENSSL_CACHE_ROOT := $(shell bash -lc 'source "$(ROOT)/scripts/deps.sh" >/dev/null 2>&1; telefy_detect_environment; printf "%s" "$$OPENSSL_CACHE_DIR/$$ANDROID_NDK_VERSION"')
 
-.PHONY: all setup doctor app build-web build-web-wasm run run-web run-web-debug web-upd run-android split-apk bundle native package-native clean clean-web clean-deps clean-all rebuild rebuild-native build-info
+.PHONY: all setup doctor app build-web build-web-wasm run run-web run-web-debug web-upd run-android install-android logs-android split-apk bundle native package-native clean clean-web clean-deps clean-all rebuild rebuild-native build-info
 
 all:
 	@echo "make setup"
@@ -310,6 +310,24 @@ run-web-debug:
 
 run-android:
 	$(MAKE) run PLATFORM=android DEVICE_ID="$(DEVICE_ID)"
+
+install-android: app
+	@test "$(PLATFORM)" = "android" || (echo "Usage: make install-android PLATFORM=android BUILD_MODE=debug"; exit 1)
+	@device_id="$(DEVICE_ID)"; \
+	if [ -z "$$device_id" ]; then device_id="$$(adb devices | awk 'NR > 1 && $$2 == "device" { print $$1; exit }')"; fi; \
+	if [ -z "$$device_id" ]; then echo "Android device not found. Run: make install-android PLATFORM=android DEVICE_ID=<device-id>"; exit 1; fi; \
+	apk="$(BUILD_ROOT)/app/outputs/flutter-apk/telefy-$(BUILD_MODE)-full.apk"; \
+	if [ ! -f "$$apk" ]; then echo "APK not found: $$apk"; exit 1; fi; \
+	adb -s "$$device_id" install -r "$$apk"; \
+	echo "Installed $$apk on $$device_id"
+
+logs-android:
+	@device_id="$(DEVICE_ID)"; \
+	if [ -z "$$device_id" ]; then device_id="$$(adb devices | awk 'NR > 1 && $$2 == "device" { print $$1; exit }')"; fi; \
+	if [ -z "$$device_id" ]; then echo "Android device not found. Run: make logs-android DEVICE_ID=<device-id>"; exit 1; fi; \
+	output="$(HOME)/Downloads/telefy-$$(date +%Y%m%d-%H%M%S).log"; \
+	adb -s "$$device_id" logcat -d -v threadtime > "$$output"; \
+	echo "Android log saved to $$output"
 
 split-apk:
 	@test -f .env || (echo ".env is missing; create it with: cp .env.example .env"; exit 1)

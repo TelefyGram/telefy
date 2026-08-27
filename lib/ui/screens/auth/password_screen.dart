@@ -102,6 +102,7 @@ class _PasswordScreenState extends State<PasswordScreen>
         actions: [
           TelefyDialogAction(label: tr('auth.understood'), onPressed: () {}),
         ],
+        includeLogAction: true,
       );
     }
   }

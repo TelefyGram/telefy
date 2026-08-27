@@ -156,7 +156,12 @@ class _PhoneNumberScreenState extends State<PhoneNumberScreen> {
         final message = error.toString().replaceFirst('Bad state: ', '');
         final isFloodWait =
             message.contains('429') ||
-            message.toLowerCase().contains('flood_wait');
+            message.toLowerCase().contains('flood_wait') ||
+            message.toLowerCase().contains('phone_number_flood');
+        final isNetworkError =
+            message.toLowerCase().contains('network') ||
+            message.toLowerCase().contains('timeout') ||
+            message.toLowerCase().contains('connection');
         await TelefyDialog.show(
           context,
           title: isFloodWait
@@ -164,10 +169,13 @@ class _PhoneNumberScreenState extends State<PhoneNumberScreen> {
               : tr('auth.codeRequestFailed'),
           message: isFloodWait
               ? tr('auth.telegramRateLimit')
+              : isNetworkError
+              ? tr('auth.networkError')
               : tr('auth.checkPhone'),
           actions: [
             TelefyDialogAction(label: tr('auth.understood'), onPressed: () {}),
           ],
+          includeLogAction: true,
         );
       }
     } finally {

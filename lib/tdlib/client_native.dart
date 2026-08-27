@@ -77,7 +77,7 @@ class TelegramClient implements TelegramClientApi {
     bool allowFlashCall = false,
     bool allowMissedCall = false,
     bool isCurrentPhoneNumber = false,
-    bool allowSmsRetrieverApi = false,
+    bool allowSmsRetrieverApi = true,
   }) async {
     if (!_tdlibParametersSet) {
       final initializationFuture = _initializationFuture;
@@ -115,7 +115,8 @@ class TelegramClient implements TelegramClientApi {
     final response = await _waitForResponse(requestId);
     if (response['@type'] == 'error') {
       throw StateError(
-        'Authentication code request failed: ${response['message']}',
+        'Authentication code request failed: '
+        '${response['code']}: ${response['message']}',
       );
     }
   }
@@ -277,6 +278,12 @@ class TelegramClient implements TelegramClientApi {
     await Directory(filesDirectory).create(recursive: true);
 
     send({
+      '@type': 'setOption',
+      'name': 'prefer_ipv6',
+      'value': {'@type': 'optionValueBoolean', 'value': false},
+    });
+
+    send({
       '@type': 'setTdlibParameters',
       '@extra': 'setTdlibParameters',
       'database_directory': databaseDirectory,
@@ -326,7 +333,7 @@ class TelegramClient implements TelegramClientApi {
 
   Future<Map<String, dynamic>> _waitForResponse(
     String requestId, {
-    int attempts = 60,
+    int attempts = 300,
   }) async {
     final deadline = DateTime.now().add(Duration(milliseconds: attempts * 150));
     while (DateTime.now().isBefore(deadline)) {
@@ -337,7 +344,9 @@ class TelegramClient implements TelegramClientApi {
       }
 
       if (response['@type'] == 'error') {
-        throw StateError('TDLib request failed: ${response['message']}');
+        throw StateError(
+          'TDLib request failed: ${response['code']}: ${response['message']}',
+        );
       }
 
       return response;

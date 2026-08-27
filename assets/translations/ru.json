@@ -17,6 +17,7 @@
         "continue": "Продолжить",
         "codeTitle": "Введите код",
         "codeDescription": "Мы отправили код подтверждения на номер",
+        "codeDeliveryNotice": "Код приходит только в официальном приложении Telegram",
         "passwordRequiredTitle": "Требуется пароль",
         "passwordRequiredMessage": "Для этого аккаунта требуется пароль двухфакторной аутентификации.",
         "passwordTitle": "Введите пароль",
@@ -75,5 +76,11 @@
         "accountUnavailable": "Данные аккаунта недоступны.",
         "retry": "Повторить",
         "username": "Имя пользователя"
+    },
+    "settings": {
+        "title": "Настройки",
+        "exportLog": "лог",
+        "exportLogDescription": "Експортировать файл лога",
+        "logUnavailable": "Файл лога пока недоступен."
     }
 }

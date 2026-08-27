@@ -5,7 +5,7 @@ plugins {
 }
 
 android {
-    namespace = "com.example.telefy"
+    namespace = "telefy.gram"
     compileSdk = flutter.compileSdkVersion
     ndkVersion = flutter.ndkVersion
 
@@ -15,7 +15,7 @@ android {
     }
 
     defaultConfig {
-        applicationId = "com.example.telefy"
+        applicationId = "telefy.gram"
         minSdk = flutter.minSdkVersion
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode

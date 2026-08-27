@@ -123,6 +123,7 @@ class _CodeScreenState extends State<CodeScreen>
         actions: [
           TelefyDialogAction(label: tr('auth.understood'), onPressed: () {}),
         ],
+        includeLogAction: true,
       );
       await Future<void>.delayed(const Duration(milliseconds: 400));
       if (mounted && _codeController.text.isEmpty) {
@@ -220,7 +221,43 @@ class _CodeScreenState extends State<CodeScreen>
                             fontWeight: FontWeight.w600,
                           ),
                         ),
-                        const SizedBox(height: 28),
+                        const SizedBox(height: 20),
+                        Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 10,
+                          ),
+                          decoration: BoxDecoration(
+                            color: Colors.red.withValues(alpha: 0.07),
+                            border: Border.all(
+                              color: Colors.red.withValues(alpha: 0.35),
+                            ),
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Icon(
+                                Icons.info_outline,
+                                size: 18,
+                                color: Colors.red.shade700,
+                              ),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Text(
+                                  tr('auth.codeDeliveryNotice'),
+                                  style: TextStyle(
+                                    fontSize: 13,
+                                    height: 1.25,
+                                    color: Colors.red.shade800,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 20),
                         _CodeInput(
                           controller: _codeController,
                           focusNode: _focusNode,

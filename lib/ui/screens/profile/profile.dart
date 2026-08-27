@@ -6,6 +6,7 @@ import '../../../translations/translation.dart';
 import '../../widgets/dialog.dart';
 import '../../widgets/loading.dart';
 import '../auth/hello_screen.dart';
+import '../settings/settings.dart';
 
 class ProfileScreen extends StatefulWidget {
   final TelegramClientApi client;
@@ -84,6 +85,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         actions: [
           TelefyDialogAction(label: tr('auth.understood'), onPressed: () {}),
         ],
+        includeLogAction: true,
       );
     }
   }
@@ -133,6 +135,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
             tooltip: tr('profile.refresh'),
             onPressed: _reload,
             icon: const Icon(Icons.refresh_rounded),
+          ),
+          IconButton(
+            tooltip: tr('profile.settings'),
+            onPressed: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const SettingsScreen()),
+            ),
+            icon: const Icon(Icons.settings_outlined),
           ),
           IconButton(
             tooltip: tr('profile.logoutTooltip'),
