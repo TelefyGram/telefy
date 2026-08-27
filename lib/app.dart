@@ -1,11 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/foundation.dart';
 import 'package:lottie/lottie.dart';
 
 import 'platform/platform_info.dart';
 import 'tdlib/client.dart';
 import 'ui/screens/auth/hello_screen.dart';
-import 'ui/screens/home/profile.dart';
+import 'ui/screens/profile/profile.dart';
 
 class TelefyApp extends StatefulWidget {
   final TelegramClient client;
@@ -140,7 +139,7 @@ class _AuthGateState extends State<_AuthGate> {
   Future<void> _initialize() {
     return client.initialize(
       systemLanguageCode: 'ru',
-      deviceModel: defaultTargetPlatform.name,
+      deviceModel: deviceModel,
       systemVersion: systemVersion,
       appVersion: '0.0.1',
     );

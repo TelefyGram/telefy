@@ -53,3 +53,8 @@ app.*.map.json
 
 # Widget Preview related
 .widget_preview/
+
+# VS Code extension build artifacts
+tools/*/node_modules/
+tools/*/out/
+!tools/*/*.vsix

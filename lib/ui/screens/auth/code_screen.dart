@@ -6,7 +6,7 @@ import '../../../tdlib/client.dart';
 import '../../../translations/translation.dart';
 import '../../widgets/dialog.dart';
 import '../../widgets/loading.dart';
-import '../home/profile.dart';
+import '../profile/profile.dart';
 import 'password_screen.dart';
 
 class CodeScreen extends StatefulWidget {

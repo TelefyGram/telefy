@@ -5,7 +5,7 @@ import '../../../tdlib/client.dart';
 import '../../../translations/translation.dart';
 import '../../widgets/dialog.dart';
 import '../../widgets/loading.dart';
-import '../home/profile.dart';
+import '../profile/profile.dart';
 
 class PasswordScreen extends StatefulWidget {
   final TelegramClientApi client;

@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:telefy/tdlib/client.dart';
 import 'package:telefy/ui/screens/auth/password_screen.dart';
-import 'package:telefy/ui/screens/home/profile.dart';
+import 'package:telefy/ui/screens/profile/profile.dart';
 
 void main() {
   group('ProfileScreen', () {
