@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:async';
 import 'dart:ffi';
 
 import 'dart:io';
@@ -7,6 +8,7 @@ import 'package:ffi/ffi.dart';
 import 'package:flutter/foundation.dart';
 import 'package:path_provider/path_provider.dart';
 
+import '../logging/app_logger_platform.dart';
 import 'telegram_api.dart';
 import 'tdlib.dart';
 
@@ -22,12 +24,20 @@ class TelegramClient implements TelegramClientApi {
   Future<void>? _initializationFuture;
   String? _authorizationStateType;
   int _requestSequence = 0;
+  final Map<String, Completer<Map<String, dynamic>>> _pendingResponses = {};
+  final Map<bool, List<TelegramChatInfo>> _chatCache = {};
+  Timer? _responsePump;
 
   static const String apiIdValue = String.fromEnvironment('TELEGRAM_API_ID');
   static const String apiHash = String.fromEnvironment('TELEGRAM_API_HASH');
 
   TelegramClient() : _tdlib = TdLibBindings() {
     _client = _tdlib.create();
+    _responsePump = Timer.periodic(
+      const Duration(milliseconds: 20),
+      (_) => _drainResponses(),
+    );
+    AppLogger.event('tdlib.native.created', {'client': _client.address});
   }
 
   @override
@@ -48,6 +58,12 @@ class TelegramClient implements TelegramClientApi {
     required String systemVersion,
     required String appVersion,
   }) {
+    AppLogger.event('tdlib.initialize.requested', {
+      'language': systemLanguageCode,
+      'device': deviceModel,
+      'system': systemVersion,
+      'app': appVersion,
+    });
     return _initializationFuture ??= setTdlibParameters(
       systemLanguageCode: systemLanguageCode,
       deviceModel: deviceModel,
@@ -62,6 +78,17 @@ class TelegramClient implements TelegramClientApi {
     }
 
     final json = jsonEncode(request);
+    AppLogger.event('tdlib.request.queued', {
+      'type': request['@type'],
+      'extra': request['@extra'],
+    });
+    final requestId = request['@extra']?.toString();
+    if (requestId != null) {
+      _pendingResponses.putIfAbsent(
+        requestId,
+        Completer<Map<String, dynamic>>.new,
+      );
+    }
     final nativeString = json.toNativeUtf8();
 
     try {
@@ -79,6 +106,7 @@ class TelegramClient implements TelegramClientApi {
     bool isCurrentPhoneNumber = false,
     bool allowSmsRetrieverApi = true,
   }) async {
+    AppLogger.event('auth.phone.requested');
     if (!_tdlibParametersSet) {
       final initializationFuture = _initializationFuture;
       if (initializationFuture == null) {
@@ -125,6 +153,7 @@ class TelegramClient implements TelegramClientApi {
   Future<AuthenticationCodeResult> checkAuthenticationCode({
     required String code,
   }) async {
+    AppLogger.event('auth.code.submitted');
     if (!_tdlibParametersSet) {
       throw StateError('TDLib parameters must be set before authentication');
     }
@@ -152,6 +181,7 @@ class TelegramClient implements TelegramClientApi {
   Future<TelegramUserInfo> checkAuthenticationPassword({
     required String password,
   }) async {
+    AppLogger.event('auth.password.submitted');
     if (!_tdlibParametersSet) {
       throw StateError('TDLib parameters must be set before authentication');
     }
@@ -175,6 +205,7 @@ class TelegramClient implements TelegramClientApi {
 
   @override
   Future<TelegramUserInfo> getMe() async {
+    AppLogger.event('tdlib.get_me.requested');
     final requestId = 'getMe-${++_requestSequence}';
     send({'@type': 'getMe', '@extra': requestId});
 
@@ -225,6 +256,7 @@ class TelegramClient implements TelegramClientApi {
 
   @override
   Future<List<TelegramMessageInfo>> getChatMessages(int chatId) async {
+    AppLogger.event('chats.messages.requested', {'chatId': chatId});
     final response = await _requestSafely('getChatHistory', {
       'chat_id': chatId,
       'from_message_id': 0,
@@ -240,6 +272,73 @@ class TelegramClient implements TelegramClientApi {
       if (parsed != null) result.add(parsed);
     }
     return result;
+  }
+
+  @override
+  Future<List<TelegramChatInfo>> getChats({
+    bool archive = false,
+    bool forceRefresh = false,
+  }) async {
+    AppLogger.event('chats.list.requested', {'archive': archive});
+    if (!forceRefresh && _chatCache.containsKey(archive)) {
+      AppLogger.event('chats.list.cache_hit', {'archive': archive});
+      return List.unmodifiable(_chatCache[archive]!);
+    }
+    final response = await _requestSafely('getChats', {
+      'chat_list': {'@type': archive ? 'chatListArchive' : 'chatListMain'},
+      'limit': 100,
+    });
+    final ids = response['chat_ids'];
+    if (ids is! List) return const [];
+    final chats = await Future.wait(
+      ids.whereType<num>().map((id) async {
+        final chat = await _requestSafely('getChat', {'chat_id': id.toInt()});
+        return _chatFromResponse(chat, archive: archive);
+      }),
+    );
+    final result = chats.whereType<TelegramChatInfo>().toList();
+    _chatCache[archive] = result;
+    return result;
+  }
+
+  @override
+  Future<void> sendMessage({required int chatId, required String text}) async {
+    AppLogger.event('chats.message.send_requested', {'chatId': chatId});
+    await _request('sendMessage', {
+      'chat_id': chatId,
+      'input_message_content': {
+        '@type': 'inputMessageText',
+        'text': {'@type': 'formattedText', 'text': text},
+      },
+    });
+    _chatCache.clear();
+  }
+
+  TelegramChatInfo? _chatFromResponse(
+    Map<String, dynamic> response, {
+    required bool archive,
+  }) {
+    final id = _intValue(response['id']);
+    if (id == null) return null;
+    final type = response['type'];
+    final isChannel = type is Map && type['@type'] == 'chatTypeSupergroup'
+        ? type['is_channel'] == true
+        : false;
+    final lastMessage = response['last_message'];
+    final content = lastMessage is Map ? lastMessage['content'] : null;
+    final text = content is Map ? content['text'] : null;
+    return TelegramChatInfo(
+      id: id,
+      title: response['title']?.toString() ?? '',
+      username: _stringValue(
+        response['usernames'] is Map
+            ? (response['usernames']['active_usernames'] as List?)?.firstOrNull
+            : null,
+      ),
+      isChannel: isChannel,
+      isArchived: archive,
+      lastMessage: text is Map ? _formattedText(text) : null,
+    );
   }
 
   Future<TelegramMessageInfo?> _parseMessage(Map message) async {
@@ -329,6 +428,12 @@ class TelegramClient implements TelegramClientApi {
     return int.tryParse(value?.toString() ?? '');
   }
 
+  String? _stringValue(dynamic value) {
+    if (value == null) return null;
+    final text = value.toString().trim();
+    return text.isEmpty ? null : text;
+  }
+
   Future<Map<String, dynamic>> _request(
     String type,
     Map<String, dynamic> parameters,
@@ -382,12 +487,12 @@ class TelegramClient implements TelegramClientApi {
 
   /// Receives the next response/update from TDLib
   /// Returns null if TDLib has returned nothing within the timeout
-  Map<String, dynamic>? receive() {
+  Map<String, dynamic>? receive([double timeout = 0.1]) {
     if (_disposed) {
       throw StateError('TelegramClient has already been disposed');
     }
 
-    final result = _tdlib.receive(_client, 0.1);
+    final result = _tdlib.receive(_client, timeout);
 
     if (result == nullptr) {
       return null;
@@ -492,7 +597,6 @@ class TelegramClient implements TelegramClientApi {
       }
 
       await Future<void>.delayed(const Duration(milliseconds: 50));
-      receive();
     }
 
     throw StateError(
@@ -505,14 +609,29 @@ class TelegramClient implements TelegramClientApi {
     String requestId, {
     int attempts = 300,
   }) async {
+    final stopwatch = Stopwatch()..start();
+    final completer = _pendingResponses.putIfAbsent(
+      requestId,
+      Completer<Map<String, dynamic>>.new,
+    );
     final deadline = DateTime.now().add(Duration(milliseconds: attempts * 150));
     while (DateTime.now().isBefore(deadline)) {
-      await Future<void>.delayed(const Duration(milliseconds: 50));
-      final response = receive();
-      if (response == null || response['@extra'] != requestId) {
-        continue;
-      }
+      final response = await Future.any([
+        completer.future,
+        Future<Map<String, dynamic>?>.delayed(
+          const Duration(milliseconds: 50),
+          () => null,
+        ),
+      ]);
+      if (response is! Map<String, dynamic>) continue;
 
+      AppLogger.event('tdlib.response.received', {
+        'requestId': requestId,
+        'type': response['@type'],
+        'elapsedMs': stopwatch.elapsedMilliseconds,
+      });
+
+      _pendingResponses.remove(requestId);
       if (response['@type'] == 'error') {
         throw StateError(
           'TDLib request failed: ${response['code']}: ${response['message']}',
@@ -522,7 +641,31 @@ class TelegramClient implements TelegramClientApi {
       return response;
     }
 
+    AppLogger.event('tdlib.response.timeout', {
+      'requestId': requestId,
+      'elapsedMs': stopwatch.elapsedMilliseconds,
+    });
+    _pendingResponses.remove(requestId);
     throw StateError('Timed out waiting for TDLib response: $requestId');
+  }
+
+  void _drainResponses() {
+    if (_disposed) return;
+    try {
+      var response = receive(0.02);
+      while (response != null) {
+        final requestId = response['@extra']?.toString();
+        if (requestId != null) {
+          final completer = _pendingResponses.remove(requestId);
+          if (completer != null && !completer.isCompleted) {
+            completer.complete(response);
+          }
+        }
+        response = receive(0);
+      }
+    } on Object catch (error, stack) {
+      AppLogger.exception('tdlib.receive.failed', error, stack);
+    }
   }
 
   void dispose() {
@@ -530,6 +673,14 @@ class TelegramClient implements TelegramClientApi {
       return;
     }
 
+    AppLogger.event('tdlib.native.destroyed', {'client': _client.address});
+    _responsePump?.cancel();
+    for (final completer in _pendingResponses.values) {
+      if (!completer.isCompleted) {
+        completer.completeError(StateError('TelegramClient disposed'));
+      }
+    }
+    _pendingResponses.clear();
     _tdlib.destroy(_client);
     _disposed = true;
   }
@@ -550,6 +701,10 @@ class TelegramClient implements TelegramClientApi {
     }
 
     _authorizationStateType = state['@type'] as String?;
+    AppLogger.event('auth.state.changed', {
+      'from': previousState,
+      'to': _authorizationStateType,
+    });
 
     if (_authorizationStateType != previousState) {
       for (final listener in List<VoidCallback>.from(

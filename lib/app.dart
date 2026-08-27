@@ -11,6 +11,7 @@ import 'internal/ui/app_theme.dart';
 import 'internal/ui/hidden_settings_data.dart';
 import 'internal/ui/ui_descriptions.dart';
 import 'logging/log_exporter.dart';
+import 'logging/app_logger_platform.dart';
 import 'platform/platform_info.dart';
 import 'tdlib/client.dart';
 import 'translations/translation.dart';
@@ -26,7 +27,7 @@ class TelefyApp extends StatefulWidget {
   State<TelefyApp> createState() => _TelefyAppState();
 }
 
-class _TelefyAppState extends State<TelefyApp> {
+class _TelefyAppState extends State<TelefyApp> with WidgetsBindingObserver {
   final _navigatorKey = GlobalKey<NavigatorState>();
   StreamSubscription<AccelerometerEvent>? _shakeSubscription;
   DateTime? _lastShakePeak;
@@ -36,6 +37,8 @@ class _TelefyAppState extends State<TelefyApp> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    AppLogger.event('app.widget.initialized');
     Translations.addListener(_onTranslationsChanged);
     ThemeController.selectedName.addListener(_onThemeChanged);
     if (!kIsWeb &&
@@ -47,6 +50,8 @@ class _TelefyAppState extends State<TelefyApp> {
 
   @override
   void dispose() {
+    AppLogger.event('app.widget.disposing');
+    WidgetsBinding.instance.removeObserver(this);
     Translations.removeListener(_onTranslationsChanged);
     ThemeController.selectedName.removeListener(_onThemeChanged);
     _shakeSubscription?.cancel();
@@ -54,11 +59,20 @@ class _TelefyAppState extends State<TelefyApp> {
     super.dispose();
   }
 
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    AppLogger.event('app.lifecycle', {'state': state.name});
+  }
+
   void _onTranslationsChanged() {
+    AppLogger.event('translations.changed');
     if (mounted) setState(() {});
   }
 
   void _onThemeChanged() {
+    AppLogger.event('theme.changed', {
+      'theme': ThemeController.selectedName.value,
+    });
     if (mounted) setState(() {});
   }
 
@@ -86,6 +100,7 @@ class _TelefyAppState extends State<TelefyApp> {
   }
 
   Future<void> _showHiddenSettings() async {
+    AppLogger.event('hidden_settings.opened');
     final context = _navigatorKey.currentContext;
     if (context == null) {
       _isHiddenSettingsOpen = false;
@@ -205,6 +220,7 @@ class _AuthGateState extends State<_AuthGate> {
   }
 
   Future<void> _initialize() {
+    AppLogger.event('auth.initialization.started');
     return client.initialize(
       systemLanguageCode: 'ru',
       deviceModel: deviceModel,
@@ -223,10 +239,19 @@ class _AuthGateState extends State<_AuthGate> {
         }
 
         if (snapshot.hasError) {
+          AppLogger.event('auth.initialization.failed', {
+            'error': snapshot.error,
+          });
           debugPrint('TDLib initialization failed: ${snapshot.error}');
         }
 
-        return client.authorizationStateType == 'authorizationStateReady'
+        final ready =
+            client.authorizationStateType == 'authorizationStateReady';
+        AppLogger.event('auth.route.selected', {
+          'ready': ready,
+          'state': client.authorizationStateType,
+        });
+        return ready
             ? ProfileScreen(client: client)
             : OnboardingScreen(client: client);
       },

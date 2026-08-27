@@ -26,6 +26,14 @@
 - Add every new theme token to all selectable theme files, and keep user-visible theme names localized in both translation JSON files.
 - When adding a widget with a distinct visual role, give it a dedicated token such as `colors.chatIncoming` or `elements.profile.avatarRadius` instead of reusing an unrelated token.
 
+## UI Architecture
+
+- Keep TDLib requests and response mapping in `lib/tdlib/` or a feature service, not inside build methods.
+- Keep async state and user actions in screen `State` classes; keep repeated presentation in `lib/ui/widgets/`.
+- Reuse `TelefyPrimaryButton`, `TelefyTextField`, `TelefyPanel`, `TelefyEmptyState`, and `Loading` before creating another equivalent widget.
+- Put reusable spacing, sizes, radii, colors, typography, and elevations in `assets/themes/*.json.theme`; access them through `TelefyUiConfig`, `themeColor`, `themeNumber`, `themeBool`, or `themeString`.
+- New shared widgets must have a representative `@Preview` in `lib/widget_previews.dart` and all visible text must use `tr`.
+
 ## Immutable TDLib
 
 - Treat `tdlib/` as immutable and read-only.

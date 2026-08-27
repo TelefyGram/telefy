@@ -6,8 +6,18 @@
         "dialog": "Dialog"
     },
     "chats": {
-        "title": "My chats",
-        "action": "Press me"
+        "title": "Chats",
+        "action": "Press me",
+        "active": "Chats",
+        "archive": "Archive",
+        "channels": "Channels",
+        "refresh": "Refresh chats",
+        "loadFailed": "Could not load chats",
+        "empty": "No chats here yet",
+        "noMessages": "No messages yet",
+        "messageHint": "Message",
+        "send": "Send",
+        "unsupportedMessage": "Media message"
     },
     "language": {
         "name": "English",
@@ -121,6 +131,7 @@
         "exportLogDescription": "Export the log file",
         "telegram_classic": "Telegram classic",
         "telegram_liquid_glass": "Telegram Liquid Glass",
+        "telegram_aurora_glass": "Aurora Glass",
         "logUnavailable": "The log file is not available yet."
         ,"logExported": "The log was copied and downloaded."
     },

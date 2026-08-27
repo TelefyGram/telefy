@@ -9,9 +9,16 @@ import 'internal/ui/theme_controller.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await AppLogger.initialize();
+  AppLogger.event('app.start');
   await Translations.loadFallbacks();
+  AppLogger.event('translations.fallbacks_loaded');
   await Translations.setLanguage('en');
+  AppLogger.event('translations.language_set', {'language': 'en'});
   await ThemeController.load();
+  AppLogger.event('theme.loaded', {
+    'theme': ThemeController.selectedName.value,
+  });
   Translations.startAutoReload();
   PingService.start(
     url: const String.fromEnvironment(
@@ -20,13 +27,8 @@ Future<void> main() async {
     ),
   );
 
-  AppLogger.initialize().then<void>(
-    (_) {},
-    onError: (Object error, StackTrace stack) {
-      debugPrint('Failed to enable file logging: $error\n$stack');
-    },
-  );
-
   final client = TelegramClient();
+  AppLogger.event('tdlib.client_created');
   runApp(TelefyApp(client: client));
+  AppLogger.event('app.run_app');
 }

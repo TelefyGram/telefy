@@ -12,6 +12,8 @@
     "panel": "#F2F2F7",
     "input": "#EEF0F3",
     "danger": "#D93025",
+    "success": "#36A852",
+    "mutedSurface": "#EEF0F3",
     "profileAccent": "#3390EC",
     "chatIncoming": "#FFFFFF",
     "chatOutgoing": "#E1FFC7",
@@ -25,6 +27,10 @@
     "profile": {"avatarRadius": 48},
     "input": {"radius": 14},
     "list": {"radius": 12},
+    "page": {"padding": 24},
+    "layout": {"controlGap": 12},
+    "auth": {"pagePadding": 24, "pageTopPadding": 12, "pageBottomPadding": 32, "contentMaxWidth": 460, "illustrationSize": 150, "illustrationGap": 20, "titleSize": 30, "titleGap": 10, "bodySize": 16, "bodyLineHeight": 1.4, "phoneTextSize": 17, "phoneGap": 4, "noticeGap": 20, "noticeRadius": 10, "noticeTextSize": 13, "noticeLineHeight": 1.25, "noticeHorizontalPadding": 12, "noticeVerticalPadding": 10, "noticeIconSize": 18, "noticeIconGap": 8, "loadingHeight": 28, "loadingTopPadding": 10, "controlGap": 20},
+    "code": {"cellMinSize": 40, "cellMaxSize": 64, "cellRadius": 15, "cellTextSize": 28, "cellGap": 8, "shakeDistance": 10, "animationMs": 150, "transitionMs": 120, "successDelayMs": 420, "errorResetDelayMs": 400},
     "button": {"radius": 16, "height": 52}
   },
   "typography": {

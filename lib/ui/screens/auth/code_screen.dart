@@ -3,14 +3,18 @@ import 'package:flutter/services.dart';
 import 'package:lottie/lottie.dart';
 
 import '../../../tdlib/client.dart';
+import '../../../logging/app_logger_platform.dart';
 import '../../../translations/translation.dart';
+import '../../../internal/ui/theme_controller.dart';
 import '../../widgets/dialog.dart';
 import '../../widgets/loading.dart';
+import '../../widgets/telefy_auth_widgets.dart';
+import '../../widgets/telefy_controls.dart';
 import '../profile/profile.dart';
 import 'password_screen.dart';
 
 class CodeScreen extends StatefulWidget {
-  final TelegramClient client;
+  final TelegramClientApi client;
   final String phoneNumber;
 
   const CodeScreen({
@@ -38,7 +42,7 @@ class _CodeScreenState extends State<CodeScreen>
     super.initState();
     _shakeController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 360),
+      duration: TelefyUiConfig.codeAnimationDuration,
     );
     _codeController.addListener(_onCodeChanged);
   }
@@ -70,6 +74,7 @@ class _CodeScreenState extends State<CodeScreen>
     setState(() {
       _isVerifying = true;
     });
+    AppLogger.event('auth.code.verification_started');
 
     try {
       final result = await widget.client.checkAuthenticationCode(code: code);
@@ -94,7 +99,7 @@ class _CodeScreenState extends State<CodeScreen>
         _isVerifying = false;
         _isCorrect = true;
       });
-      await Future<void>.delayed(const Duration(milliseconds: 420));
+      await Future<void>.delayed(TelefyUiConfig.codeSuccessDelay);
       if (mounted) {
         Navigator.pushAndRemoveUntil(
           context,
@@ -104,7 +109,8 @@ class _CodeScreenState extends State<CodeScreen>
           (_) => false,
         );
       }
-    } on Object catch (error) {
+    } on Object catch (error, stack) {
+      AppLogger.exception('auth.code.verification_failed', error, stack);
       if (!mounted) return;
       final message = _codeErrorMessage(error);
       setState(() {
@@ -125,7 +131,7 @@ class _CodeScreenState extends State<CodeScreen>
         ],
         includeLogAction: true,
       );
-      await Future<void>.delayed(const Duration(milliseconds: 400));
+      await Future<void>.delayed(TelefyUiConfig.codeErrorResetDelay);
       if (mounted && _codeController.text.isEmpty) {
         setState(() => _isCorrect = null);
       }
@@ -166,26 +172,32 @@ class _CodeScreenState extends State<CodeScreen>
         body: SafeArea(
           child: LayoutBuilder(
             builder: (context, constraints) {
-              final contentWidth = (constraints.maxWidth - 48).clamp(
-                0.0,
-                460.0,
-              );
-              final spacing = contentWidth < 360 ? 6.0 : 8.0;
+              final contentWidth =
+                  (constraints.maxWidth - TelefyUiConfig.authPagePadding * 2)
+                      .clamp(0.0, TelefyUiConfig.authContentMaxWidth);
+              final spacing = contentWidth < 360
+                  ? TelefyUiConfig.codeCellGap - 2
+                  : TelefyUiConfig.codeCellGap;
               final cellSize = ((contentWidth - spacing * 4) / 5).clamp(
-                40.0,
-                64.0,
+                TelefyUiConfig.codeCellMinSize,
+                TelefyUiConfig.codeCellMaxSize,
               );
               return Center(
                 child: SingleChildScrollView(
-                  padding: const EdgeInsets.fromLTRB(24, 12, 24, 32),
+                  padding: EdgeInsets.fromLTRB(
+                    TelefyUiConfig.authPagePadding,
+                    TelefyUiConfig.authPageTopPadding,
+                    TelefyUiConfig.authPagePadding,
+                    TelefyUiConfig.authPageBottomPadding,
+                  ),
                   child: SizedBox(
                     width: contentWidth,
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         SizedBox(
-                          width: 150,
-                          height: 150,
+                          width: TelefyUiConfig.authIllustrationSize,
+                          height: TelefyUiConfig.authIllustrationSize,
                           child: Lottie.asset(
                             'assets/animations/safe.tgs',
                             decoder: LottieComposition.decodeGZip,
@@ -194,70 +206,58 @@ class _CodeScreenState extends State<CodeScreen>
                             animate: true,
                           ),
                         ),
-                        const SizedBox(height: 20),
+                        SizedBox(height: TelefyUiConfig.authIllustrationGap),
                         Text(
                           tr('auth.codeTitle'),
                           textAlign: TextAlign.center,
                           style: TextStyle(
-                            fontSize: 30,
+                            fontSize: TelefyUiConfig.authTitleSize,
                             fontWeight: FontWeight.w700,
                           ),
                         ),
-                        const SizedBox(height: 10),
+                        SizedBox(height: TelefyUiConfig.authTitleGap),
                         Text(
                           tr('auth.codeDescription'),
                           textAlign: TextAlign.center,
                           style: TextStyle(
-                            fontSize: 16,
+                            fontSize: TelefyUiConfig.authBodySize,
                             color: theme.colorScheme.onSurfaceVariant,
                           ),
                         ),
-                        const SizedBox(height: 4),
+                        SizedBox(height: TelefyUiConfig.authPhoneGap),
                         Text(
                           widget.phoneNumber,
                           textAlign: TextAlign.center,
-                          style: const TextStyle(
-                            fontSize: 17,
+                          style: TextStyle(
+                            fontSize: TelefyUiConfig.authBodySize + 1,
                             fontWeight: FontWeight.w600,
                           ),
                         ),
-                        const SizedBox(height: 20),
-                        Container(
-                          width: double.infinity,
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 12,
-                            vertical: 10,
-                          ),
-                          decoration: BoxDecoration(
-                            color: Colors.red.withValues(alpha: 0.07),
-                            border: Border.all(
-                              color: Colors.red.withValues(alpha: 0.35),
-                            ),
-                            borderRadius: BorderRadius.circular(10),
-                          ),
+                        SizedBox(height: TelefyUiConfig.authNoticeGap),
+                        TelefyAuthNotice(
                           child: Row(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Icon(
                                 Icons.info_outline,
-                                size: 18,
-                                color: Colors.red.shade700,
+                                size: TelefyUiConfig.authNoticeIconSize,
+                                color: TelefyUiConfig.danger,
                               ),
-                              const SizedBox(width: 8),
+                              SizedBox(width: TelefyUiConfig.authNoticeIconGap),
                               Expanded(
                                 child: Text(
                                   tr('auth.codeDeliveryNotice'),
                                   style: TextStyle(
-                                    fontSize: 13,
+                                    fontSize: TelefyUiConfig.authNoticeTextSize,
                                     height: 1.25,
-                                    color: Colors.red.shade800,
+                                    color: TelefyUiConfig.danger,
                                   ),
                                 ),
                               ),
                             ],
                           ),
                         ),
-                        const SizedBox(height: 20),
+                        SizedBox(height: TelefyUiConfig.authNoticeGap),
                         _CodeInput(
                           controller: _codeController,
                           focusNode: _focusNode,
@@ -268,26 +268,23 @@ class _CodeScreenState extends State<CodeScreen>
                           shakeAnimation: _shakeController,
                         ),
                         SizedBox(
-                          height: 28,
+                          height: TelefyUiConfig.authLoadingHeight,
                           child: _isVerifying
-                              ? const Padding(
-                                  padding: EdgeInsets.only(top: 10),
+                              ? Padding(
+                                  padding: EdgeInsets.only(
+                                    top: TelefyUiConfig.authLoadingTopPadding,
+                                  ),
                                   child: Loading(size: 16),
                                 )
                               : null,
                         ),
-                        const SizedBox(height: 12),
-                        SizedBox(
-                          width: double.infinity,
-                          height: 56,
-                          child: FilledButton(
-                            onPressed:
-                                _codeController.text.length == 5 &&
-                                    !_isVerifying
-                                ? _submit
-                                : null,
-                            child: Text(tr('auth.continue')),
-                          ),
+                        SizedBox(height: TelefyUiConfig.controlGap),
+                        TelefyPrimaryButton(
+                          onPressed:
+                              _codeController.text.length == 5 && !_isVerifying
+                              ? _submit
+                              : null,
+                          child: Text(tr('auth.continue')),
                         ),
                       ],
                     ),
@@ -380,7 +377,8 @@ class _CodeInputState extends State<_CodeInput> {
       builder: (context, child) {
         final progress = widget.shakeAnimation.value;
         final offset =
-            (progress < 0.5 ? progress * 2 : (1 - progress) * 2) * 10;
+            (progress < 0.5 ? progress * 2 : (1 - progress) * 2) *
+            TelefyUiConfig.codeCellShakeDistance;
         return Transform.translate(
           offset: Offset(offset * (progress < 0.5 ? -1 : 1), 0),
           child: child,
@@ -461,45 +459,45 @@ class _CodeCell extends StatelessWidget {
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
     final borderColor = isCorrect == true
-        ? Colors.green
+        ? TelefyUiConfig.success
         : isCorrect == false
         ? colorScheme.error
         : isActive
         ? colorScheme.primary
-        : Colors.grey.shade300;
+        : TelefyUiConfig.outline;
     return AnimatedContainer(
-      duration: const Duration(milliseconds: 150),
+      duration: TelefyUiConfig.codeAnimationDuration,
       width: size,
       height: size,
       alignment: Alignment.center,
       decoration: BoxDecoration(
         color: isCorrect == true
-            ? Colors.green.withValues(alpha: 0.08)
+            ? TelefyUiConfig.success.withValues(alpha: 0.08)
             : isCorrect == false
             ? colorScheme.error.withValues(alpha: 0.08)
             : colorScheme.surface,
         border: Border.all(color: borderColor, width: isActive ? 2 : 1),
-        borderRadius: BorderRadius.circular(15),
+        borderRadius: BorderRadius.circular(TelefyUiConfig.codeCellRadius),
       ),
       child: Stack(
         alignment: Alignment.center,
         children: [
           AnimatedSwitcher(
-            duration: const Duration(milliseconds: 120),
+            duration: TelefyUiConfig.codeTransitionDuration,
             transitionBuilder: (child, animation) =>
                 ScaleTransition(scale: animation, child: child),
             child: isCorrect == true
                 ? Icon(
                     Icons.check_rounded,
                     key: const ValueKey('success'),
-                    color: Colors.green,
-                    size: 30,
+                    color: TelefyUiConfig.success,
+                    size: TelefyUiConfig.codeCellTextSize,
                   )
                 : Text(
                     value ?? '',
                     key: ValueKey(value),
-                    style: const TextStyle(
-                      fontSize: 28,
+                    style: TextStyle(
+                      fontSize: TelefyUiConfig.codeCellTextSize,
                       fontWeight: FontWeight.w600,
                     ),
                   ),

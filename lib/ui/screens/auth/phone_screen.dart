@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:lottie/lottie.dart';
 
 import '../../../tdlib/client.dart';
+import '../../../logging/app_logger_platform.dart';
 import '../../../translations/translation.dart';
 import '../../widgets/dialog.dart';
 import '../../widgets/loading.dart';
@@ -110,6 +111,7 @@ class _PhoneNumberScreenState extends State<PhoneNumberScreen> {
         ? AnonymousNumber.phoneCode
         : _selectedCountry!.phoneCode;
     final fullPhoneNumber = '+$phoneCode$phone';
+    AppLogger.event('auth.phone.confirmation_opened');
 
     var confirmed = false;
     await TelefyDialog.show(
@@ -134,6 +136,7 @@ class _PhoneNumberScreenState extends State<PhoneNumberScreen> {
     }
 
     setState(() => _isRequestingCode = true);
+    AppLogger.event('auth.phone.request_started');
 
     try {
       await requestAuthenticationCode(
@@ -150,7 +153,8 @@ class _PhoneNumberScreenState extends State<PhoneNumberScreen> {
               CodeScreen(client: widget.client, phoneNumber: fullPhoneNumber),
         ),
       );
-    } on Object catch (error) {
+    } on Object catch (error, stack) {
+      AppLogger.exception('auth.phone.request_failed', error, stack);
       debugPrint('Authentication code request failed: $error');
       if (mounted) {
         final message = error.toString().replaceFirst('Bad state: ', '');

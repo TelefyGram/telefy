@@ -10,6 +10,7 @@ class ThemeController {
   static const themes = <String, String>{
     'telegram_classic': 'assets/themes/telegram_classic.json.theme',
     'telegram_liquid_glass': 'assets/themes/telegram_liquid_glass.json.theme',
+    'telegram_aurora_glass': 'assets/themes/telegram_aurora_glass.json.theme',
   };
 
   static const _preferenceKey = 'theme_name';
@@ -57,6 +58,94 @@ class ThemeController {
 }
 
 ThemeData buildTelefyTheme() => ThemeController.current;
+
+class TelefyUiConfig {
+  const TelefyUiConfig._();
+
+  static double get buttonHeight => themeNumber('elements.button.height', 56);
+  static double get cardRadius => themeNumber('elements.card.radius', 16);
+  static double get inputRadius => themeNumber('elements.input.radius', 16);
+  static double get listRadius => themeNumber('elements.list.radius', 12);
+  static double get pagePadding => themeNumber('elements.page.padding', 24);
+  static double get controlGap => themeNumber('elements.layout.controlGap', 12);
+  static Color get secondaryText => themeColor(
+    'colors.secondaryText',
+    ThemeController.current.colorScheme.onSurfaceVariant,
+  );
+  static Color get outline =>
+      themeColor('colors.outline', ThemeController.current.colorScheme.outline);
+  static Color get danger =>
+      themeColor('colors.danger', ThemeController.current.colorScheme.error);
+  static Color get success => themeColor('colors.success', Colors.green);
+  static Color get mutedSurface => themeColor(
+    'colors.mutedSurface',
+    ThemeController.current.colorScheme.surfaceContainerHighest,
+  );
+  static double get authPagePadding =>
+      themeNumber('elements.auth.pagePadding', pagePadding);
+  static double get authIllustrationSize =>
+      themeNumber('elements.auth.illustrationSize', 150);
+  static double get authTitleSize => themeNumber('elements.auth.titleSize', 30);
+  static double get authBodySize => themeNumber('elements.auth.bodySize', 16);
+  static double get authNoticeRadius =>
+      themeNumber('elements.auth.noticeRadius', 10);
+  static double get authNoticeTextSize =>
+      themeNumber('elements.auth.noticeTextSize', 13);
+  static double get authControlGap =>
+      themeNumber('elements.auth.controlGap', 20);
+  static double get codeCellMinSize =>
+      themeNumber('elements.code.cellMinSize', 40);
+  static double get codeCellMaxSize =>
+      themeNumber('elements.code.cellMaxSize', 64);
+  static double get codeCellRadius =>
+      themeNumber('elements.code.cellRadius', 15);
+  static double get codeCellTextSize =>
+      themeNumber('elements.code.cellTextSize', 28);
+  static double get codeCellGap => themeNumber('elements.code.cellGap', 8);
+  static double get codeCellShakeDistance =>
+      themeNumber('elements.code.shakeDistance', 10);
+  static Duration get codeAnimationDuration => Duration(
+    milliseconds: themeNumber('elements.code.animationMs', 150).round(),
+  );
+  static Duration get codeTransitionDuration => Duration(
+    milliseconds: themeNumber('elements.code.transitionMs', 120).round(),
+  );
+  static double get authPageTopPadding =>
+      themeNumber('elements.auth.pageTopPadding', 12);
+  static double get authPageBottomPadding =>
+      themeNumber('elements.auth.pageBottomPadding', 32);
+  static double get authIllustrationGap =>
+      themeNumber('elements.auth.illustrationGap', 20);
+  static double get authTitleGap => themeNumber('elements.auth.titleGap', 10);
+  static double get authPhoneGap => themeNumber('elements.auth.phoneGap', 4);
+  static double get authNoticeGap => themeNumber('elements.auth.noticeGap', 20);
+  static double get authLoadingHeight =>
+      themeNumber('elements.auth.loadingHeight', 28);
+  static double get authLoadingTopPadding =>
+      themeNumber('elements.auth.loadingTopPadding', 10);
+  static double get authNoticeHorizontalPadding =>
+      themeNumber('elements.auth.noticeHorizontalPadding', 12);
+  static double get authNoticeVerticalPadding =>
+      themeNumber('elements.auth.noticeVerticalPadding', 10);
+  static double get authNoticeIconSize =>
+      themeNumber('elements.auth.noticeIconSize', 18);
+  static double get authNoticeIconGap =>
+      themeNumber('elements.auth.noticeIconGap', 8);
+  static double get authContentMaxWidth =>
+      themeNumber('elements.auth.contentMaxWidth', 460);
+  static double get authPhoneTextSize =>
+      themeNumber('elements.auth.phoneTextSize', 17);
+  static double get authBodyLineHeight =>
+      themeNumber('elements.auth.bodyLineHeight', 1.4);
+  static double get authNoticeLineHeight =>
+      themeNumber('elements.auth.noticeLineHeight', 1.25);
+  static Duration get codeSuccessDelay => Duration(
+    milliseconds: themeNumber('elements.code.successDelayMs', 420).round(),
+  );
+  static Duration get codeErrorResetDelay => Duration(
+    milliseconds: themeNumber('elements.code.errorResetDelayMs', 400).round(),
+  );
+}
 
 Color theme(String key, [Color fallback = Colors.transparent]) {
   return ThemeController.model.color(key) ?? fallback;

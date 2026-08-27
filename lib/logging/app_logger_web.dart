@@ -32,6 +32,17 @@ class AppLogger {
     _previousDebugPrint?.call(safeMessage);
   }
 
+  static void event(String name, [Map<String, Object?> fields = const {}]) {
+    final details = fields.entries
+        .map((entry) => '${entry.key}=${entry.value}')
+        .join(' ');
+    log(details.isEmpty ? name : '$name $details');
+  }
+
+  static void exception(String name, Object error, StackTrace stack) {
+    event(name, {'error': error, 'stack': stack});
+  }
+
   static void _append(String message) {
     _buffer.writeln('${DateTime.now().toUtc().toIso8601String()} $message');
   }

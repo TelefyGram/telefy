@@ -6,8 +6,18 @@
         "dialog": "Диалоговое окно"
     },
     "chats": {
-        "title": "Мои чаты",
-        "action": "Нажми меня"
+        "title": "Чаты",
+        "action": "Нажми меня",
+        "active": "Чаты",
+        "archive": "Архив",
+        "channels": "Каналы",
+        "refresh": "Обновить чаты",
+        "loadFailed": "Не удалось загрузить чаты",
+        "empty": "Здесь пока нет чатов",
+        "noMessages": "Сообщений пока нет",
+        "messageHint": "Сообщение",
+        "send": "Отправить",
+        "unsupportedMessage": "Медиа-сообщение"
     },
     "language": {
         "name": "Русский",
@@ -121,6 +131,7 @@
         "exportLogDescription": "Експортировать файл лога",
         "telegram_classic": "Старый Telegram",
         "telegram_liquid_glass": "Новый Telegram: Liquid Glass",
+        "telegram_aurora_glass": "Aurora Glass",
         "logUnavailable": "Файл лога пока недоступен."
         ,"logExported": "Лог скопирован и скачан."
     },

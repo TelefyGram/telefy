@@ -1,0 +1,98 @@
+{
+  "name": "telegram_aurora_glass",
+  "seedColor": "#6C8CFF",
+  "brightness": "light",
+  "useMaterial3": true,
+  "radius": 26,
+  "surfaceOpacity": 0.72,
+  "colors": {
+    "brand": "#6C8CFF",
+    "primary": "#5B6FE8",
+    "background": "#EEF3FF",
+    "panel": "#FFFFFF",
+    "input": "#FDFEFF",
+    "danger": "#D94B68",
+    "success": "#35A982",
+    "mutedSurface": "#E4EAFE",
+    "profileAccent": "#697FF2",
+    "chatIncoming": "#FFFFFF",
+    "chatOutgoing": "#E0F8F0",
+    "primaryText": "#202A45",
+    "secondaryText": "#66718C",
+    "outline": "#C8D1EA"
+  },
+  "elements": {
+    "card": {
+      "radius": 24
+    },
+    "surface": {
+      "opacity": 0.72
+    },
+    "profile": {
+      "avatarRadius": 58
+    },
+    "input": {
+      "radius": 22
+    },
+    "list": {
+      "radius": 20
+    },
+    "page": {
+      "padding": 24
+    },
+    "layout": {
+      "controlGap": 14
+    },
+    "auth": {
+      "pagePadding": 24,
+      "pageTopPadding": 12,
+      "pageBottomPadding": 32,
+      "contentMaxWidth": 460,
+      "illustrationSize": 156,
+      "illustrationGap": 20,
+      "titleSize": 30,
+      "titleGap": 10,
+      "bodySize": 16,
+      "bodyLineHeight": 1.4,
+      "phoneTextSize": 17,
+      "phoneGap": 4,
+      "noticeGap": 20,
+      "noticeRadius": 18,
+      "noticeTextSize": 13,
+      "noticeLineHeight": 1.25,
+      "noticeHorizontalPadding": 12,
+      "noticeVerticalPadding": 10,
+      "noticeIconSize": 18,
+      "noticeIconGap": 8,
+      "loadingHeight": 28,
+      "loadingTopPadding": 10,
+      "controlGap": 20
+    },
+    "code": {
+      "cellMinSize": 40,
+      "cellMaxSize": 64,
+      "cellRadius": 20,
+      "cellTextSize": 28,
+      "cellGap": 8,
+      "shakeDistance": 10,
+      "animationMs": 150,
+      "transitionMs": 120,
+      "successDelayMs": 420,
+      "errorResetDelayMs": 400
+    },
+    "button": {
+      "radius": 26,
+      "height": 56
+    }
+  },
+  "typography": {
+    "body": {
+      "size": 16,
+      "weight": 450
+    },
+    "title": {
+      "size": 24,
+      "weight": 750
+    }
+  }
+}

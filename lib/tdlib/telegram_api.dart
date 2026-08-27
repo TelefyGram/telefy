@@ -20,6 +20,24 @@ class TelegramMessageInfo {
   });
 }
 
+class TelegramChatInfo {
+  final int id;
+  final String title;
+  final String? username;
+  final bool isChannel;
+  final bool isArchived;
+  final String? lastMessage;
+
+  const TelegramChatInfo({
+    required this.id,
+    required this.title,
+    this.username,
+    this.isChannel = false,
+    this.isArchived = false,
+    this.lastMessage,
+  });
+}
+
 class TelegramUserInfo {
   final String? firstName;
   final String? lastName;
@@ -95,6 +113,13 @@ abstract interface class TelegramClientApi {
   Future<TelegramUserInfo> getMe();
 
   Future<List<TelegramMessageInfo>> getChatMessages(int chatId);
+
+  Future<List<TelegramChatInfo>> getChats({
+    bool archive = false,
+    bool forceRefresh = false,
+  });
+
+  Future<void> sendMessage({required int chatId, required String text});
 
   Future<void> logOut();
 }

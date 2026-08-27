@@ -2,6 +2,7 @@ import 'dart:js_util' as js_util;
 
 import 'package:flutter/foundation.dart';
 
+import '../logging/app_logger_platform.dart';
 import 'telegram_api.dart';
 
 export 'telegram_api.dart';
@@ -29,6 +30,7 @@ class TelegramClient implements TelegramClientApi {
         'onUpdate': js_util.allowInterop(_handleUpdate),
       }),
     ]);
+    AppLogger.event('tdlib.web.created');
   }
 
   @override
@@ -175,6 +177,61 @@ class TelegramClient implements TelegramClientApi {
     return messages.whereType<Map>().map(_messageFromResponse).toList();
   }
 
+  @override
+  Future<List<TelegramChatInfo>> getChats({
+    bool archive = false,
+    bool forceRefresh = false,
+  }) async {
+    final response = await _send({
+      '@type': 'getChats',
+      'chat_list': {'@type': archive ? 'chatListArchive' : 'chatListMain'},
+      'limit': 100,
+    });
+    final ids = response['chat_ids'];
+    if (ids is! List) return const [];
+    final result = <TelegramChatInfo>[];
+    for (final id in ids.whereType<num>()) {
+      final chat = await _send({'@type': 'getChat', 'chat_id': id.toInt()});
+      final parsed = _chatFromResponse(chat, archive: archive);
+      if (parsed != null) result.add(parsed);
+    }
+    return result;
+  }
+
+  @override
+  Future<void> sendMessage({required int chatId, required String text}) async {
+    await _send({
+      '@type': 'sendMessage',
+      'chat_id': chatId,
+      'input_message_content': {
+        '@type': 'inputMessageText',
+        'text': {'@type': 'formattedText', 'text': text},
+      },
+    });
+  }
+
+  TelegramChatInfo? _chatFromResponse(
+    Map<String, dynamic> response, {
+    required bool archive,
+  }) {
+    final id = _intValue(response['id']);
+    if (id == null) return null;
+    final type = response['type'];
+    final isChannel = type is Map && type['@type'] == 'chatTypeSupergroup'
+        ? type['is_channel'] == true
+        : false;
+    final lastMessage = response['last_message'];
+    final content = lastMessage is Map ? lastMessage['content'] : null;
+    final text = content is Map ? content['text'] : null;
+    return TelegramChatInfo(
+      id: id,
+      title: response['title']?.toString() ?? '',
+      isChannel: isChannel,
+      isArchived: archive,
+      lastMessage: text is Map ? _stringValue(text['text']) : null,
+    );
+  }
+
   TelegramMessageInfo _messageFromResponse(Map message) {
     final content = message['content'];
     final type = content is Map ? content['@type']?.toString() : null;
@@ -203,12 +260,15 @@ class TelegramClient implements TelegramClientApi {
 
   void dispose() {
     if (_disposed) return;
+    AppLogger.event('tdlib.web.destroyed');
     _disposed = true;
     js_util.callMethod<void>(_client, 'close', const []);
   }
 
   Future<Map<String, dynamic>> _send(Map<String, dynamic> request) async {
     if (_disposed) throw StateError('TelegramClient has already been disposed');
+    final stopwatch = Stopwatch()..start();
+    AppLogger.event('tdlib.request.sent', {'type': request['@type']});
     final promise = js_util.callMethod<dynamic>(_client, 'send', [
       js_util.jsify(request),
     ]);
@@ -218,6 +278,10 @@ class TelegramClient implements TelegramClientApi {
     if (response is! Map)
       throw StateError('TDLib returned an invalid response');
     final result = Map<String, dynamic>.from(response);
+    AppLogger.event('tdlib.response.received', {
+      'type': result['@type'],
+      'elapsedMs': stopwatch.elapsedMilliseconds,
+    });
     if (result['@type'] == 'error') {
       throw StateError(result['message']?.toString() ?? 'TDLib request failed');
     }

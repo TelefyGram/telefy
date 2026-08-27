@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 
 import '../../../tdlib/client.dart';
 import '../../../internal/ui/app_theme.dart';
+import '../chats/chats_screen.dart';
 import '../../../translations/translation.dart';
 import '../../widgets/dialog.dart';
 import '../../widgets/loading.dart';
@@ -162,6 +163,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
             tooltip: tr('profile.logoutTooltip'),
             onPressed: _isLoggingOut ? null : _logout,
             icon: const Icon(Icons.logout_rounded),
+          ),
+          IconButton(
+            tooltip: tr('chats.title'),
+            onPressed: () => Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => ChatsScreen(client: widget.client),
+              ),
+            ),
+            icon: const Icon(Icons.forum_outlined),
           ),
         ],
       ),

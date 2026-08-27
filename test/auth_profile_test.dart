@@ -3,8 +3,13 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:telefy/tdlib/client.dart';
 import 'package:telefy/ui/screens/auth/password_screen.dart';
 import 'package:telefy/ui/screens/profile/profile.dart';
+import 'package:telefy/translations/translation.dart';
 
-void main() {
+void main() async {
+  TestWidgetsFlutterBinding.ensureInitialized();
+  await Translations.loadFallbacks();
+  await Translations.setLanguage('ru');
+
   group('ProfileScreen', () {
     testWidgets('shows only account fields returned by TDLib', (tester) async {
       final client = FakeTelegramClient(
@@ -19,9 +24,9 @@ void main() {
       await tester.pump();
 
       expect(find.text('Slava'), findsNWidgets(2));
-      expect(find.text('Username'), findsOneWidget);
-      expect(find.text('@example'), findsOneWidget);
-      expect(find.text('ID'), findsOneWidget);
+      expect(find.text('Имя пользователя'), findsOneWidget);
+      expect(find.text('@example'), findsNWidgets(2));
+      expect(find.text('Peer ID'), findsOneWidget);
       expect(find.text('123456789'), findsOneWidget);
       expect(find.text('Телефон'), findsNothing);
     });
@@ -187,6 +192,17 @@ class FakeTelegramClient implements TelegramClientApi {
   Future<List<TelegramMessageInfo>> getChatMessages(int chatId) async {
     return const [];
   }
+
+  @override
+  Future<List<TelegramChatInfo>> getChats({
+    bool archive = false,
+    bool forceRefresh = false,
+  }) async {
+    return const [];
+  }
+
+  @override
+  Future<void> sendMessage({required int chatId, required String text}) async {}
 
   @override
   Future<void> logOut() async {

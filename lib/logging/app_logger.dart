@@ -8,6 +8,8 @@ class AppLogger {
   static const _retention = Duration(minutes: 30);
   static File? _file;
   static Future<void> _writeQueue = Future<void>.value();
+  static final StringBuffer _pendingLines = StringBuffer();
+  static Timer? _flushTimer;
   static void Function(String? message, {int? wrapWidth})? _previousDebugPrint;
 
   static Future<void> initialize() async {
@@ -22,6 +24,7 @@ class AppLogger {
     );
     _file = file;
     await file.writeAsString('--- Telefy start $timestamp ---\n');
+    log('logger.initialized path=${file.path}');
 
     _previousDebugPrint = debugPrint;
     debugPrint = (message, {wrapWidth}) {
@@ -47,11 +50,39 @@ class AppLogger {
     if (file == null) return;
 
     final safeMessage = _redactCredentials(message);
-    final line = '${DateTime.now().toUtc().toIso8601String()} $safeMessage\n';
+    _pendingLines.write('${DateTime.now().toUtc().toIso8601String()} ');
+    _pendingLines.writeln(safeMessage);
+    _flushTimer ??= Timer(const Duration(milliseconds: 120), _flush);
+  }
+
+  static void _flush() {
+    _flushTimer = null;
+    if (_pendingLines.isEmpty) return;
+    final file = _file;
+    if (file == null) return;
+    final lines = _pendingLines.toString();
+    _pendingLines.clear();
     _writeQueue = _writeQueue.then((_) async {
-      await _removeExpiredLogs(file.parent);
-      await file.writeAsString(line, mode: FileMode.append, flush: true);
+      try {
+        await file.writeAsString(lines, mode: FileMode.append);
+      } on Object catch (error, stack) {
+        _previousDebugPrint?.call('Log write failed: $error\n$stack');
+      }
     });
+    if (_pendingLines.isNotEmpty) {
+      _flushTimer ??= Timer(const Duration(milliseconds: 120), _flush);
+    }
+  }
+
+  static void event(String name, [Map<String, Object?> fields = const {}]) {
+    final details = fields.entries
+        .map((entry) => '${entry.key}=${_safeValue(entry.value)}')
+        .join(' ');
+    log(details.isEmpty ? name : '$name $details');
+  }
+
+  static void exception(String name, Object error, StackTrace stack) {
+    event(name, {'error': error, 'stack': stack});
   }
 
   static File? get currentFile => _file;
@@ -70,6 +101,13 @@ class AppLogger {
       ),
       (match) => '${match.group(1)}<redacted>',
     );
+  }
+
+  static String _safeValue(Object? value) {
+    if (value == null) return 'null';
+    final text = value.toString();
+    if (text.length <= 240) return _redactCredentials(text);
+    return '${_redactCredentials(text.substring(0, 240))}...';
   }
 
   static Future<void> _removeExpiredLogs(Directory directory) async {

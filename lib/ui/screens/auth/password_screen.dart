@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:lottie/lottie.dart';
 
 import '../../../tdlib/client.dart';
+import '../../../logging/app_logger_platform.dart';
 import '../../../translations/translation.dart';
+import '../../widgets/telefy_controls.dart';
 import '../../widgets/dialog.dart';
 import '../../widgets/loading.dart';
 import '../profile/profile.dart';
@@ -85,7 +87,8 @@ class _PasswordScreenState extends State<PasswordScreen>
         ),
         (_) => false,
       );
-    } on Object catch (error) {
+    } on Object catch (error, stack) {
+      AppLogger.exception('auth.password.verification_failed', error, stack);
       if (!mounted) return;
       debugPrint('Password verification failed: $error');
       setState(() {
@@ -236,17 +239,13 @@ class _PasswordScreenState extends State<PasswordScreen>
                           // TODO: Добавить восстановление пароля после подключения
                           // соответствующего сценария в текущем TDLib auth flow.
                           const SizedBox(height: 28),
-                          SizedBox(
-                            width: double.infinity,
-                            height: 56,
-                            child: FilledButton(
-                              onPressed: _canContinue && !_isVerifying
-                                  ? _continue
-                                  : null,
-                              child: _isVerifying
-                                  ? const Loading(size: 20, color: Colors.white)
-                                  : Text(tr('auth.continue')),
-                            ),
+                          TelefyPrimaryButton(
+                            onPressed: _canContinue && !_isVerifying
+                                ? _continue
+                                : null,
+                            child: _isVerifying
+                                ? const Loading(size: 20, color: Colors.white)
+                                : Text(tr('auth.continue')),
                           ),
                         ],
                       ),
