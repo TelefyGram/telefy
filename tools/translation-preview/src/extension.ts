@@ -87,14 +87,17 @@ function provideCompletionItems(
   }
 
   return [...candidates].map(candidate => {
+    const value = lookup(`${parent}${candidate}`);
     const item = new vscode.CompletionItem(
-      candidate,
+      {
+        label: candidate,
+        detail: value ? `  ${value}` : '',
+      },
       vscode.CompletionItemKind.Value,
     );
     item.range = range;
     item.insertText = candidate;
-    const value = lookup(`${parent}${candidate}`);
-    if (value !== undefined) item.detail = value;
+    item.filterText = candidate;
     return item;
   });
 }
