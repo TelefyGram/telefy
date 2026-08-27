@@ -4,6 +4,7 @@ import 'package:lottie/lottie.dart';
 
 import '../../../telegram/client.dart';
 import '../../widgets/dialog.dart';
+import '../../widgets/loading.dart';
 import '../home/profile.dart';
 import 'password_screen.dart';
 
@@ -231,13 +232,7 @@ class _CodeScreenState extends State<CodeScreen>
                           child: _isVerifying
                               ? const Padding(
                                   padding: EdgeInsets.only(top: 10),
-                                  child: SizedBox(
-                                    width: 16,
-                                    height: 16,
-                                    child: CircularProgressIndicator(
-                                      strokeWidth: 2,
-                                    ),
-                                  ),
+                                  child: Loading(size: 16),
                                 )
                               : null,
                         ),

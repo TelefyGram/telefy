@@ -3,6 +3,7 @@ import 'package:lottie/lottie.dart';
 
 import '../../../telegram/client.dart';
 import '../../widgets/dialog.dart';
+import '../../widgets/loading.dart';
 import '../home/profile.dart';
 
 class PasswordScreen extends StatefulWidget {
@@ -237,13 +238,7 @@ class _PasswordScreenState extends State<PasswordScreen>
                                   ? _continue
                                   : null,
                               child: _isVerifying
-                                  ? const SizedBox(
-                                      width: 20,
-                                      height: 20,
-                                      child: CircularProgressIndicator(
-                                        strokeWidth: 2,
-                                      ),
-                                    )
+                                  ? const Loading(size: 20, color: Colors.white)
                                   : const Text('Продолжить'),
                             ),
                           ),

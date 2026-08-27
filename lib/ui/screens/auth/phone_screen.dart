@@ -116,8 +116,16 @@ class _PhoneNumberScreenState extends State<PhoneNumberScreen> {
       title: 'Ваш номер',
       message: fullPhoneNumber,
       actions: [
-        TelefyDialogAction(label: 'Изменить номер телефона', onPressed: () {}),
-        TelefyDialogAction(label: 'Да', onPressed: () => confirmed = true),
+        TelefyDialogAction(
+          label: 'Изменить',
+          onPressed: () {},
+          shortcut: const SingleActivator(LogicalKeyboardKey.escape),
+        ),
+        TelefyDialogAction(
+          label: 'Да',
+          onPressed: () => confirmed = true,
+          shortcut: const SingleActivator(LogicalKeyboardKey.enter),
+        ),
       ],
     );
     if (!confirmed || !mounted) {

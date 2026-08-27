@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import '../../../telegram/client.dart';
 import '../../widgets/dialog.dart';
+import '../../widgets/loading.dart';
 import '../auth/hello_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
@@ -43,8 +45,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
       title: 'Выйти из аккаунта?',
       message: 'Сохранённая сессия будет завершена на этом устройстве.',
       actions: [
-        TelefyDialogAction(label: 'Отмена', onPressed: () {}),
-        TelefyDialogAction(label: 'Выйти', onPressed: () => confirmed = true),
+        TelefyDialogAction(
+          label: 'Отмена',
+          onPressed: () {},
+          shortcut: const SingleActivator(LogicalKeyboardKey.escape),
+        ),
+        TelefyDialogAction(
+          label: 'Выйти',
+          onPressed: () => confirmed = true,
+          shortcut: const SingleActivator(LogicalKeyboardKey.enter),
+        ),
       ],
     );
     if (!confirmed || !mounted) return;
@@ -143,7 +153,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       if (snapshot.connectionState == ConnectionState.waiting) {
                         return const SizedBox(
                           height: 160,
-                          child: Center(child: CircularProgressIndicator()),
+                          child: Center(child: Loading(size: 34)),
                         );
                       }
                       if (snapshot.hasError) {
