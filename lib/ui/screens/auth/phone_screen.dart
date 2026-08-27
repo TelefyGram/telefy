@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:lottie/lottie.dart';
 
-import '../../../telegram/client.dart';
+import '../../../tdlib/client.dart';
 import '../../widgets/dialog.dart';
 import '../../widgets/loading.dart';
 import 'internal/auth.dart';

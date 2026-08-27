@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
+import 'package:lottie/lottie.dart';
 
 import 'platform/platform_info.dart';
-import 'telegram/client.dart';
+import 'tdlib/client.dart';
 import 'ui/screens/auth/hello_screen.dart';
 import 'ui/screens/home/profile.dart';
 
@@ -120,7 +121,20 @@ class _AuthGateState extends State<_AuthGate> {
   @override
   void initState() {
     super.initState();
+    client.addAuthorizationStateListener(_onAuthorizationStateChanged);
     _initializationFuture = _initialize();
+  }
+
+  @override
+  void dispose() {
+    client.removeAuthorizationStateListener(_onAuthorizationStateChanged);
+    super.dispose();
+  }
+
+  void _onAuthorizationStateChanged() {
+    if (mounted) {
+      setState(() {});
+    }
   }
 
   Future<void> _initialize() {
@@ -138,7 +152,7 @@ class _AuthGateState extends State<_AuthGate> {
       future: _initializationFuture,
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
-          return OnboardingScreen(client: client);
+          return const _LoadingScreen();
         }
 
         if (snapshot.hasError) {
@@ -149,6 +163,29 @@ class _AuthGateState extends State<_AuthGate> {
             ? ProfileScreen(client: client)
             : OnboardingScreen(client: client);
       },
+    );
+  }
+}
+
+class _LoadingScreen extends StatelessWidget {
+  const _LoadingScreen();
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: Center(
+        child: SizedBox(
+          width: 160,
+          height: 160,
+          child: Lottie.asset(
+            'assets/animations/loading.tgs',
+            decoder: LottieComposition.decodeGZip,
+            fit: BoxFit.contain,
+            repeat: true,
+            animate: true,
+          ),
+        ),
+      ),
     );
   }
 }

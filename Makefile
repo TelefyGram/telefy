@@ -53,7 +53,7 @@ ANDROID_NDK_ROOT ?= $(DISCOVERED_ANDROID_NDK_ROOT)
 
 OPENSSL_CACHE_ROOT := $(shell bash -lc 'source "$(ROOT)/scripts/deps.sh" >/dev/null 2>&1; telefy_detect_environment; printf "%s" "$$OPENSSL_CACHE_DIR/$$ANDROID_NDK_VERSION"')
 
-.PHONY: all setup doctor app build-web build-web-wasm run run-web run-android split-apk bundle native package-native clean clean-deps clean-all rebuild rebuild-native build-info
+.PHONY: all setup doctor app build-web build-web-wasm run run-web run-web-debug run-android split-apk bundle native package-native clean clean-deps clean-all rebuild rebuild-native build-info
 
 all:
 	@echo "make setup"
@@ -63,6 +63,7 @@ all:
 	@echo "make build-web"
 	@echo "make build-web-wasm"
 	@echo "make run PLATFORM=web PORT=8080"
+	@echo "make run-web-debug PORT=8080"
 	@echo "make run PLATFORM=android DEVICE_ID=<device-id>"
 	@echo "make run PLATFORM=macos"
 	@echo "make run PLATFORM=windows"
@@ -268,7 +269,7 @@ run:
 	@test -f .env || (echo ".env is missing; create it with: cp .env.example .env"; exit 1)
 	@$(FLUTTER) pub get
 	@if [ "$(PLATFORM)" = "web" ]; then \
-		$(FLUTTER) run -d chrome --web-port=$(PORT) \
+		$(FLUTTER) run -d chrome --$(BUILD_MODE) --web-port=$(PORT) \
 			--dart-define=TELEGRAM_API_ID=$$(grep -E '^TELEGRAM_API_ID=' .env | cut -d= -f2-) \
 			--dart-define=TELEGRAM_API_HASH=$$(grep -E '^TELEGRAM_API_HASH=' .env | cut -d= -f2-); \
 	elif [ "$(PLATFORM)" = "android" ]; then \
@@ -288,7 +289,11 @@ run:
 
 run-web:
 	$(MAKE) build-web-wasm
-	$(MAKE) run PLATFORM=web PORT=$(PORT)
+	$(MAKE) run PLATFORM=web BUILD_MODE=release PORT=$(PORT)
+
+run-web-debug:
+	$(MAKE) build-web-wasm
+	$(MAKE) run PLATFORM=web BUILD_MODE=debug PORT=$(PORT)
 
 run-android:
 	$(MAKE) run PLATFORM=android DEVICE_ID="$(DEVICE_ID)"

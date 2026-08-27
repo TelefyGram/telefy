@@ -16,6 +16,7 @@ class TelegramClient implements TelegramClientApi {
   late final Pointer<Void> _client;
 
   bool _disposed = false;
+  final List<VoidCallback> _authorizationStateListeners = [];
   bool _tdlibParametersSet = false;
   Future<void>? _initializationFuture;
   String? _authorizationStateType;
@@ -30,6 +31,14 @@ class TelegramClient implements TelegramClientApi {
 
   @override
   String? get authorizationStateType => _authorizationStateType;
+
+  void addAuthorizationStateListener(VoidCallback listener) {
+    _authorizationStateListeners.add(listener);
+  }
+
+  void removeAuthorizationStateListener(VoidCallback listener) {
+    _authorizationStateListeners.remove(listener);
+  }
 
   @override
   Future<void> initialize({
@@ -350,6 +359,7 @@ class TelegramClient implements TelegramClientApi {
   }
 
   void _updateAuthorizationState(Map<String, dynamic> response) {
+    final previousState = _authorizationStateType;
     final state = response['authorization_state'] is Map<String, dynamic>
         ? response['authorization_state']
         : response['@type']?.toString().startsWith('authorizationState') == true
@@ -360,6 +370,14 @@ class TelegramClient implements TelegramClientApi {
     }
 
     _authorizationStateType = state['@type'] as String?;
+
+    if (_authorizationStateType != previousState) {
+      for (final listener in List<VoidCallback>.from(
+        _authorizationStateListeners,
+      )) {
+        listener();
+      }
+    }
 
     if (state['@type'] == 'authorizationStateWaitEncryptionKey') {
       send({

@@ -1,5 +1,7 @@
 import 'dart:js_util' as js_util;
 
+import 'package:flutter/foundation.dart';
+
 import 'telegram_api.dart';
 
 export 'telegram_api.dart';
@@ -7,6 +9,7 @@ export 'telegram_api.dart';
 class TelegramClient implements TelegramClientApi {
   late final dynamic _client;
   String? _authorizationStateType;
+  final List<VoidCallback> _authorizationStateListeners = [];
   Future<void>? _initializationFuture;
   bool _disposed = false;
 
@@ -30,6 +33,14 @@ class TelegramClient implements TelegramClientApi {
 
   @override
   String? get authorizationStateType => _authorizationStateType;
+
+  void addAuthorizationStateListener(VoidCallback listener) {
+    _authorizationStateListeners.add(listener);
+  }
+
+  void removeAuthorizationStateListener(VoidCallback listener) {
+    _authorizationStateListeners.remove(listener);
+  }
 
   @override
   Future<void> initialize({
@@ -156,12 +167,20 @@ class TelegramClient implements TelegramClientApi {
   }
 
   void _updateAuthorizationState(Map<String, dynamic> response) {
+    final previousState = _authorizationStateType;
     final state = response['authorization_state'];
     if (state is Map) {
       _authorizationStateType = state['@type']?.toString();
     } else if (response['@type']?.toString().startsWith('authorizationState') ==
         true) {
       _authorizationStateType = response['@type']?.toString();
+    }
+    if (_authorizationStateType != previousState) {
+      for (final listener in List<VoidCallback>.from(
+        _authorizationStateListeners,
+      )) {
+        listener();
+      }
     }
   }
 
