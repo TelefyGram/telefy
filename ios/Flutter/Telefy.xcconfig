@@ -1,5 +1,0 @@
-LIBRARY_SEARCH_PATHS[sdk=iphoneos*] = $(inherited) "$(PROJECT_DIR)/../build/tdlib/ios/device/lib"
-LIBRARY_SEARCH_PATHS[sdk=iphonesimulator*] = $(inherited) "$(PROJECT_DIR)/../build/tdlib/ios/simulator/lib"
-
-OTHER_LDFLAGS[sdk=iphoneos*] = $(inherited) -all_load -ltdjson_static -ltdjson_private -ltdclient -ltdutils -ltdactor -ltde2e -ltdnet -ltdsqlite -ltddb -ltdmtproto -ltdcore -ltdapi -ltelefy
-OTHER_LDFLAGS[sdk=iphonesimulator*] = $(inherited) -all_load -ltdjson_static -ltdjson_private -ltdclient -ltdutils -ltdactor -ltde2e -ltdnet -ltdsqlite -ltddb -ltdmtproto -ltdcore -ltdapi -ltelefy
